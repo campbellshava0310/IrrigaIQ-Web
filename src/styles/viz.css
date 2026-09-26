@@ -1,0 +1,27 @@
+/*
+ * Chart tokens. Categorical slots 1-3 of the reference palette (validated for CVD separation in
+ * both modes); status colours are reserved for states and always ship with an icon + label.
+ */
+:root {
+  --viz-series-1: #2a78d6;
+  --viz-series-2: #eb6834;
+  --viz-series-3: #1baf7a;
+  --viz-reference: #52514e;
+  --viz-grid: #e6e5e1;
+  --viz-forecast-wash: rgba(42, 120, 214, 0.06);
+  --viz-stress-wash: rgba(208, 59, 59, 0.06);
+  --status-good: #0ca30c;
+  --status-warning: #fab219;
+  --status-serious: #ec835a;
+  --status-critical: #d03b3b;
+}
+
+:root[data-mantine-color-scheme='dark'] {
+  --viz-series-1: #3987e5;
+  --viz-series-2: #d95926;
+  --viz-series-3: #199e70;
+  --viz-reference: #c3c2b7;
+  --viz-grid: #2e2e2c;
+  --viz-forecast-wash: rgba(57, 135, 229, 0.1);
+  --viz-stress-wash: rgba(208, 59, 59, 0.12);
+}
