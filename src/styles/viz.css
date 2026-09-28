@@ -1,27 +1,42 @@
 /*
- * Chart tokens. Categorical slots 1-3 of the reference palette (validated for CVD separation in
- * both modes); status colours are reserved for states and always ship with an icon + label.
+ * Chart tokens. Colour follows what is measured, the same on every chart, so users learn it once:
+ *   soil and crop = green · water = teal · rain and weather = blue · temperature = amber
+ *   equipment = slate · critical events = red
+ * Soil, water and rain are drawn together on the water-balance chart; the three were validated
+ * together (all pairs) for colour-blind separation, lightness band and chroma, in both modes. The
+ * chart green is the forest family pushed toward leaf so it separates from water teal.
+ * Status colours are reserved for states and always ship with an icon + label.
  */
 :root {
-  --viz-series-1: #2a78d6;
-  --viz-series-2: #eb6834;
-  --viz-series-3: #1baf7a;
-  --viz-reference: #52514e;
-  --viz-grid: #e6e5e1;
-  --viz-forecast-wash: rgba(42, 120, 214, 0.06);
-  --viz-stress-wash: rgba(208, 59, 59, 0.06);
-  --status-good: #0ca30c;
-  --status-warning: #fab219;
-  --status-serious: #ec835a;
-  --status-critical: #d03b3b;
+  --viz-soil: #2b7338;
+  --viz-water: #159a9c;
+  --viz-rain: #3b82f6;
+  --viz-temperature: #d99a24;
+  --viz-equipment: #4a5752;
+  --viz-critical: #c94b4b;
+  --viz-reference: #7f8e88;
+  --viz-grid: #e5ebe8;
+  --viz-forecast-wash: rgba(59, 130, 246, 0.06);
+  --viz-stress-wash: rgba(201, 75, 75, 0.06);
+  --status-good: #2e8b57;
+  --status-warning: #d99a24;
+  --status-serious: #cf6f35;
+  --status-critical: #c94b4b;
 }
 
 :root[data-mantine-color-scheme='dark'] {
-  --viz-series-1: #3987e5;
-  --viz-series-2: #d95926;
-  --viz-series-3: #199e70;
-  --viz-reference: #c3c2b7;
-  --viz-grid: #2e2e2c;
-  --viz-forecast-wash: rgba(57, 135, 229, 0.1);
-  --viz-stress-wash: rgba(208, 59, 59, 0.12);
+  --viz-soil: #48962c;
+  --viz-water: #22a7a9;
+  --viz-rain: #3b82f6;
+  --viz-temperature: #e2a73c;
+  --viz-equipment: #c3cec9;
+  --viz-critical: #d96a6a;
+  --viz-reference: #7f8e88;
+  --viz-grid: #26332f;
+  --viz-forecast-wash: rgba(59, 130, 246, 0.08);
+  --viz-stress-wash: rgba(201, 75, 75, 0.1);
+  --status-good: #389862;
+  --status-warning: #dea130;
+  --status-serious: #d5723d;
+  --status-critical: #ce5353;
 }

@@ -1,9 +1,9 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { http } from '@/lib/api/client';
 import { farmOps, useInvalidateFarmOps } from '@/lib/api/farmScope';
 
-import type { WorkOrder, WorkOrderCompletion, WorkOrderInput } from './types';
+import type { WorkOrder, WorkOrderCompletion, WorkOrderInput, WorkOrderStatus } from './types';
 
 export const workOrderKeys = {
   list: (farmId: string) => [...farmOps(farmId), 'work-orders'] as const,
@@ -49,10 +49,46 @@ type Transition =
   | { action: 'cancel'; id: string; reason: string | null }
   | { action: 'complete'; id: string; completion: WorkOrderCompletion };
 
-/** Lifecycle moves (start, complete, cancel, reopen); completing can reset an asset's service clock. */
+const NEXT_STATUS: Record<Transition['action'], WorkOrderStatus> = {
+  start: 'IN_PROGRESS',
+  reopen: 'OPEN',
+  cancel: 'CANCELLED',
+  complete: 'DONE',
+};
+
+/**
+ * Lifecycle moves (start, complete, cancel, reopen); completing can reset an asset's service clock.
+ * The card moves on the board at once, and back again if the server refuses.
+ */
 export function useWorkOrderTransition(farmId: string) {
+  const queryClient = useQueryClient();
   const invalidate = useInvalidateFarmOps();
+  const queryKey = workOrderKeys.list(farmId);
   return useMutation({
+    onMutate: async (transition: Transition) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previous = queryClient.getQueryData<WorkOrder[]>(queryKey);
+      if (previous) {
+        const now = new Date().toISOString();
+        queryClient.setQueryData<WorkOrder[]>(
+          queryKey,
+          previous.map((order) =>
+            order.id !== transition.id
+              ? order
+              : {
+                  ...order,
+                  status: NEXT_STATUS[transition.action],
+                  completedAt: transition.action === 'complete' ? now : order.completedAt,
+                  overdue: transition.action === 'complete' ? false : order.overdue,
+                },
+          ),
+        );
+      }
+      return { previous };
+    },
+    onError: (_error, _transition, context) => {
+      if (context?.previous) queryClient.setQueryData(queryKey, context.previous);
+    },
     mutationFn: (transition: Transition) => {
       switch (transition.action) {
         case 'start':
@@ -65,6 +101,6 @@ export function useWorkOrderTransition(farmId: string) {
           return workOrdersApi.complete(farmId, transition.id, transition.completion);
       }
     },
-    onSuccess: () => invalidate(farmId),
+    onSettled: () => invalidate(farmId),
   });
 }

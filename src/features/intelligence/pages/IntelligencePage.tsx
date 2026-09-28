@@ -42,7 +42,7 @@ import { formatDayLabel, formatRelative } from '@/lib/format';
 const TONE: Record<Tone, { label: string; color: string; icon: Icon }> = {
   ACTION: { label: 'Act today', color: 'orange', icon: IconAlertTriangle },
   WATCH: { label: 'Keep an eye on', color: 'yellow', icon: IconEye },
-  GOOD: { label: 'All good', color: 'teal', icon: IconCircleCheck },
+  GOOD: { label: 'All good', color: 'green', icon: IconCircleCheck },
 };
 
 const SECTION_ICON: Record<string, Icon> = {
@@ -64,28 +64,30 @@ function Intelligence({ farm }: { farm: Farm }) {
     <>
       <PageHeader
         title="Farm intelligence"
-        description="A plain-language briefing of what matters today across water, crops and infrastructure, and exactly how each recommendation is worked out."
+        description="Today's briefing, and how each recommendation is worked out."
+        help="A plain-language summary of what matters today across water, crops and infrastructure, built from the same data as every other screen."
       />
       {briefing.isPending && <LoadingState layout="page" label="Writing today's briefing…" />}
       {briefing.isError && <ErrorState error={briefing.error} onRetry={() => briefing.refetch()} />}
       {briefing.data && (
         <Stack gap="lg">
-          <Box className="app-hero" p={{ base: 'lg', sm: 32 }}>
-            <Group gap={8} mb="md" wrap="wrap">
-              <Group gap={6} className="app-glass-pill" wrap="nowrap">
+          <Box className="app-ai" p={{ base: 'lg', sm: 28 }}>
+            <Group gap={8} mb="sm" wrap="wrap">
+              <Group gap={6} wrap="nowrap" className="app-ai-label">
                 <IconSparkles size={14} />
-                <Text size="xs" fw={600}>
-                  Today&apos;s briefing
-                </Text>
+                Today&apos;s briefing
               </Group>
-              <Text size="sm" opacity={0.8}>
+              <Text size="sm" c="dimmed">
                 {briefing.data.farmName} · {formatDayLabel(briefing.data.date)} · generated{' '}
                 {formatRelative(briefing.data.generatedAt)}
               </Text>
             </Group>
-            <Title order={2} c="white" fz={{ base: 22, sm: 28 }} lts={-0.6} lh={1.25} maw={820}>
+            <Title order={2} fz={{ base: 21, sm: 26 }} lts={-0.5} lh={1.3} maw={820}>
               {briefing.data.headline}
             </Title>
+            <Text size="sm" c="dimmed" mt={8}>
+              Based on soil water, the forecast, crop stage and equipment health on this farm.
+            </Text>
           </Box>
 
           <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md">
@@ -115,7 +117,7 @@ function SectionCard({ section, farmId }: { section: BriefingSection; farmId: st
           <ThemeIcon variant="light" color={tone.color} size={28} radius="sm">
             <SectionIcon size={16} />
           </ThemeIcon>
-          <Text fw={650} fz="lg">
+          <Text fw={600} fz="md">
             {section.title}
           </Text>
         </Group>
@@ -148,6 +150,7 @@ function ItemLine({ item, farmId }: { item: BriefingItem; farmId: string }) {
         variant="light"
         color={tone.color}
         mt={2}
+        role="img"
         aria-label={tone.label}
       >
         <tone.icon size={11} />
@@ -269,7 +272,7 @@ function HowItWorks({ farm }: { farm: Farm }) {
               <ThemeIcon variant="light" size={28} radius="sm">
                 <IconAntennaBars5 size={16} />
               </ThemeIcon>
-              <Text fw={650}>Improve accuracy on this farm</Text>
+              <Text fw={600}>Improve accuracy on this farm</Text>
             </Group>
             {improvements.length === 0 ? (
               <Text size="sm" c="dimmed">
@@ -319,7 +322,7 @@ function ModelCard({
         <ThemeIcon variant="light" size={28} radius="sm">
           <CardIcon size={16} />
         </ThemeIcon>
-        <Text fw={650}>{title}</Text>
+        <Text fw={600}>{title}</Text>
       </Group>
       <Badge variant="light" color="gray" mb="md" radius="sm" ff="monospace" fw={500}>
         {method}
@@ -333,7 +336,7 @@ function ModelCard({
         ))}
       </List>
       <Group gap={6} mb={6}>
-        <IconBrain size={16} color="var(--mantine-color-violet-filled)" />
+        <IconBrain size={16} color="var(--mantine-color-blue-filled)" />
         <Text size="sm" fw={600}>
           With sensors and AI
         </Text>

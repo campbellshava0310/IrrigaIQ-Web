@@ -2,6 +2,7 @@ import '@fontsource-variable/inter/opsz.css';
 import '@mantine/core/styles.css';
 import '@mantine/dates/styles.css';
 import '@mantine/notifications/styles.css';
+import '@mantine/spotlight/styles.css';
 import './styles/viz.css';
 import './styles/app.css';
 

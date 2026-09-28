@@ -7,27 +7,23 @@ import {
   Group,
   Progress,
   SegmentedControl,
-  SimpleGrid,
   Stack,
   Table,
   Text,
-  ThemeIcon,
   Tooltip,
 } from '@mantine/core';
-import {
-  IconBolt,
-  IconDroplet,
-  IconInfoCircle,
-  IconPigMoney,
-  IconPlant2,
-  IconTarget,
-} from '@tabler/icons-react';
+import { IconDroplet, IconInfoCircle } from '@tabler/icons-react';
 import { useState } from 'react';
 import { Link } from 'react-router';
 
 import { PageHeader } from '@/components/PageHeader';
+import { SortTh } from '@/components/table/SortTh';
+import { useSort } from '@/components/table/useSort';
 import { EmptyState, ErrorState, LoadingState } from '@/components/QueryStates';
-import { StatCard } from '@/components/StatCard';
+import { chartTooltip } from '@/components/charts/chartTooltip';
+import { Delta } from '@/components/Delta';
+import { Metric, MetricStrip, type MetricTone } from '@/components/MetricStrip';
+import { TrendLine } from '@/components/TrendLine';
 import { RequireFarm } from '@/features/farms/components/RequireFarm';
 import type { Farm } from '@/features/farms/types';
 import { ASSET_TYPE } from '@/features/infrastructure/presentation';
@@ -52,11 +48,11 @@ const RANGES = [
 ];
 
 /** Applied vs crop need: below 85% the crop goes short, above 115% water drains past the roots. */
-function adequacy(pct: number | null): { label: string; color: string } {
+function adequacy(pct: number | null): { label: string; color: string; tone?: MetricTone } {
   if (pct == null) return { label: 'No crop demand', color: 'gray' };
-  if (pct < 85) return { label: 'Under-irrigating', color: 'orange' };
-  if (pct <= 115) return { label: 'On target', color: 'teal' };
-  return { label: 'Over-irrigating', color: 'red' };
+  if (pct < 85) return { label: 'Under-irrigating', color: 'orange', tone: 'serious' };
+  if (pct <= 115) return { label: 'On target', color: 'green', tone: 'good' };
+  return { label: 'Over-irrigating', color: 'red', tone: 'critical' };
 }
 
 export function WaterPage() {
@@ -76,7 +72,8 @@ function WaterAccounting({ farm }: { farm: Farm }) {
     <>
       <PageHeader
         title="Water"
-        description="How much water went on, what the crops actually needed, and what a fixed calendar schedule would have used. Energy and each source's licensed allocation too."
+        description="Water applied against crop need and a calendar schedule."
+        help="How much water went on, what the crops actually needed, and what a fixed calendar schedule would have used, with pumping energy and each source's licensed allocation."
         actions={
           <SegmentedControl value={range} onChange={setRange} data={RANGES} aria-label="Period" />
         }
@@ -95,11 +92,22 @@ function WaterAccounting({ farm }: { farm: Farm }) {
 function WaterReport({ summary, farm }: { summary: WaterSummary; farm: Farm }) {
   const [view, setView] = useState<'chart' | 'table'>('chart');
   const fit = adequacy(summary.adequacyPct);
+  const previous = summary.previous;
+  const period = `prior ${summary.daily.length} days`;
   const data = summary.daily.map((day) => ({
     label: formatDayMonth(day.date),
     applied: Math.round(day.appliedM3),
     requirement: Math.round(day.requirementM3),
   }));
+  const byField = useSort(summary.fields, {
+    field: (field) => field.fieldName,
+    applied: (field) => field.appliedM3,
+    need: (field) => field.requirementM3,
+    met: (field) => (field.requirementM3 > 0 ? field.appliedM3 / field.requirementM3 : null),
+    baseline: (field) => field.baselineM3,
+    saved: (field) => field.savedM3,
+    runs: (field) => field.irrigations,
+  });
 
   if (summary.fields.length === 0) {
     return (
@@ -113,85 +121,106 @@ function WaterReport({ summary, farm }: { summary: WaterSummary; farm: Farm }) {
 
   return (
     <Stack gap="lg">
-      <Grid gap="lg">
-        <Grid.Col span={{ base: 12, md: 5 }}>
-          <Card withBorder h="100%">
-            <Group gap={10} mb="md">
-              <ThemeIcon variant="light" color="teal" size={28} radius="sm">
-                <IconPigMoney size={16} />
-              </ThemeIcon>
-              <Text size="sm" fw={500} c="dimmed">
-                Water saved
-              </Text>
-            </Group>
-            <Text fz={44} fw={650} lh={1.05} lts={-1.2} c="teal" className="app-num">
-              {formatVolume(Math.max(0, summary.savedM3))}
-            </Text>
-            <Text size="sm" c="dimmed" mt={4}>
-              {summary.savedPct != null
-                ? `${formatPercent(summary.savedPct)} less than a calendar schedule would have used (${formatVolume(summary.baselineM3)}).`
-                : 'No comparison available for this period.'}
-            </Text>
-            <Text size="xs" c="dimmed" mt="md">
-              Baseline: {summary.baselineDescription}.{' '}
-              <Anchor component={Link} to={`/farms/${farm.id}`} size="xs">
-                Change it
-              </Anchor>{' '}
-              on the farm to match how the farm was irrigated before.
-            </Text>
-          </Card>
-        </Grid.Col>
-        <Grid.Col span={{ base: 12, md: 7 }}>
-          <SimpleGrid cols={2} spacing="md" h="100%">
-            <StatCard
-              label="Applied"
-              value={formatVolume(summary.appliedM3)}
-              hint={
-                summary.plannedM3 > 0
-                  ? `${formatVolume(summary.plannedM3)} more planned`
-                  : 'Completed irrigation'
-              }
-              icon={<IconDroplet size={16} />}
-              color="blue"
-            />
-            <StatCard
-              label="Crop need"
-              value={formatVolume(summary.requirementM3)}
-              hint="Crop use minus useful rain, at your system efficiency"
-              icon={<IconPlant2 size={16} />}
-              color="teal"
-            />
-            <StatCard
-              label="Need met"
-              value={formatPercent(summary.adequacyPct)}
-              hint={
-                <Badge variant="dot" color={fit.color} size="sm">
-                  {fit.label}
-                </Badge>
-              }
-              icon={<IconTarget size={16} />}
-              color={fit.color}
-            />
-            <StatCard
-              label="Pumping energy"
-              value={formatNumber(summary.energyKwh)}
-              unit="kWh"
-              hint={
-                summary.energyCost != null
-                  ? `${formatMoney(summary.energyCost, summary.currency)} on grid power`
-                  : 'Set a tariff to cost it'
-              }
-              icon={<IconBolt size={16} />}
-              color="yellow"
-            />
-          </SimpleGrid>
-        </Grid.Col>
-      </Grid>
+      <Stack gap={8}>
+        <MetricStrip label="Water for this period">
+          <Metric
+            label="Water saved"
+            value={Math.max(0, summary.savedM3)}
+            unit="m³"
+            delta={
+              <Delta
+                current={summary.savedM3}
+                previous={previous?.savedM3}
+                good="up"
+                period={period}
+              />
+            }
+            hint={
+              summary.savedPct != null
+                ? `${formatPercent(summary.savedPct)} less than a calendar schedule (${formatVolume(summary.baselineM3)})`
+                : 'No comparison available for this period'
+            }
+          />
+          <Metric
+            label="Applied"
+            value={summary.appliedM3}
+            unit="m³"
+            delta={
+              <Delta current={summary.appliedM3} previous={previous?.appliedM3} period={period} />
+            }
+            hint={
+              summary.plannedM3 > 0
+                ? `${formatVolume(summary.plannedM3)} more planned`
+                : 'Completed irrigation'
+            }
+            trend={
+              <TrendLine
+                values={summary.daily.map((day) => day.appliedM3)}
+                color="var(--viz-water)"
+                variant="bars"
+                label="Water applied per day in this period"
+              />
+            }
+          />
+          <Metric
+            label="Crop need"
+            value={summary.requirementM3}
+            unit="m³"
+            delta={
+              <Delta
+                current={summary.requirementM3}
+                previous={previous?.requirementM3}
+                period={period}
+              />
+            }
+            hint="Crop use minus useful rain, at your system efficiency"
+          />
+          <Metric
+            label="Need met"
+            value={summary.adequacyPct != null ? `${formatNumber(summary.adequacyPct)}%` : '—'}
+            tone={fit.tone}
+            hint={fit.label}
+          />
+          <Metric
+            label="Pumping energy"
+            value={summary.energyKwh}
+            unit="kWh"
+            delta={
+              <Delta
+                current={summary.energyKwh}
+                previous={previous?.energyKwh}
+                good="down"
+                period={period}
+              />
+            }
+            hint={
+              summary.energyCost != null
+                ? `${formatMoney(summary.energyCost, summary.currency)} on grid power`
+                : 'Set a tariff to cost it'
+            }
+            trend={
+              <TrendLine
+                values={summary.daily.map((day) => day.energyKwh)}
+                color="var(--viz-equipment)"
+                variant="bars"
+                label="Pumping energy per day in this period"
+              />
+            }
+          />
+        </MetricStrip>
+        <Text size="xs" c="dimmed">
+          Savings are measured against {summary.baselineDescription.toLowerCase()}.{' '}
+          <Anchor component={Link} to={`/farms/${farm.id}`} size="xs">
+            Change the baseline
+          </Anchor>{' '}
+          to match how the farm was irrigated before.
+        </Text>
+      </Stack>
 
       <Card withBorder>
         <Group justify="space-between" align="flex-start" mb="md" gap="xs">
           <div>
-            <Text fw={650} fz="lg">
+            <Text fw={600} fz="md">
               Daily water applied vs crop need (m³)
             </Text>
             <Text size="sm" c="dimmed">
@@ -216,11 +245,11 @@ function WaterReport({ summary, farm }: { summary: WaterSummary; farm: Farm }) {
             data={data}
             dataKey="label"
             series={[
-              { name: 'applied', label: 'Applied', color: 'var(--viz-series-1)', type: 'bar' },
+              { name: 'applied', label: 'Applied', color: 'var(--viz-water)', type: 'bar' },
               {
                 name: 'requirement',
                 label: 'Crop need',
-                color: 'var(--viz-series-2)',
+                color: 'var(--viz-soil)',
                 type: 'line',
               },
             ]}
@@ -229,6 +258,18 @@ function WaterReport({ summary, farm }: { summary: WaterSummary; farm: Farm }) {
             maxBarWidth={16}
             barProps={{ radius: [4, 4, 0, 0] }}
             valueFormatter={(value) => `${formatNumber(value)} m³`}
+            tooltipProps={chartTooltip({
+              series: { applied: 'Applied', requirement: 'Crop need' },
+              format: (value) => `${formatNumber(value)} m³`,
+              cursor: 'band',
+              footer: (row) =>
+                Number(row.requirement) > 0 ? (
+                  <Text size="xs" c="dimmed" className="app-num">
+                    {formatPercent((100 * Number(row.applied)) / Number(row.requirement))} of the
+                    day&apos;s need; irrigation arrives in pulses
+                  </Text>
+                ) : null,
+            })}
             gridAxis="x"
             strokeDasharray="0"
             gridProps={{ stroke: 'var(--viz-grid)' }}
@@ -238,7 +279,11 @@ function WaterReport({ summary, farm }: { summary: WaterSummary; farm: Farm }) {
             yAxisProps={{ width: 56, tickFormatter: (value: number) => formatNumber(value) }}
           />
         ) : (
-          <Table.ScrollContainer minWidth={480} maxHeight={360}>
+          <Table.ScrollContainer
+            minWidth={480}
+            maxHeight={360}
+            scrollAreaProps={{ viewportProps: { tabIndex: 0, 'aria-label': 'Scrollable table' } }}
+          >
             <Table
               striped
               stickyHeader
@@ -272,28 +317,42 @@ function WaterReport({ summary, farm }: { summary: WaterSummary; farm: Farm }) {
 
       <Grid gap="lg">
         <Grid.Col span={{ base: 12, lg: 8 }}>
-          <Card withBorder padding={0} style={{ overflow: 'hidden' }}>
-            <Text fw={650} fz="lg" px="md" py="md">
+          <Card withBorder padding={0} className="app-table-card">
+            <Text fw={600} fz="md" px="md" py="md">
               By field
             </Text>
-            <Table.ScrollContainer minWidth={640}>
+            <div className="app-table-scroll">
               <Table
+                stickyHeader
+                miw={640}
                 verticalSpacing="sm"
                 style={{ fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}
               >
                 <Table.Thead>
                   <Table.Tr>
-                    <Table.Th>Field</Table.Th>
-                    <Table.Th ta="right">Applied</Table.Th>
-                    <Table.Th ta="right">Crop need</Table.Th>
-                    <Table.Th ta="right">Need met</Table.Th>
-                    <Table.Th ta="right">Calendar would use</Table.Th>
-                    <Table.Th ta="right">Saved</Table.Th>
-                    <Table.Th ta="right">Runs</Table.Th>
+                    <SortTh sort={byField.header('field')}>Field</SortTh>
+                    <SortTh sort={byField.header('applied')} ta="right">
+                      Applied
+                    </SortTh>
+                    <SortTh sort={byField.header('need')} ta="right">
+                      Crop need
+                    </SortTh>
+                    <SortTh sort={byField.header('met')} ta="right">
+                      Need met
+                    </SortTh>
+                    <SortTh sort={byField.header('baseline')} ta="right">
+                      Calendar would use
+                    </SortTh>
+                    <SortTh sort={byField.header('saved')} ta="right">
+                      Saved
+                    </SortTh>
+                    <SortTh sort={byField.header('runs')} ta="right">
+                      Runs
+                    </SortTh>
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
-                  {summary.fields.map((field) => {
+                  {byField.sorted.map((field) => {
                     const pct =
                       field.requirementM3 > 0
                         ? (100 * field.appliedM3) / field.requirementM3
@@ -330,13 +389,13 @@ function WaterReport({ summary, farm }: { summary: WaterSummary; farm: Farm }) {
                   })}
                 </Table.Tbody>
               </Table>
-            </Table.ScrollContainer>
+            </div>
           </Card>
         </Grid.Col>
         <Grid.Col span={{ base: 12, lg: 4 }}>
           <Card withBorder h="100%">
             <Group gap={6} mb="md">
-              <Text fw={650} fz="lg">
+              <Text fw={600} fz="md">
                 Allocations this year
               </Text>
               <Tooltip
@@ -356,7 +415,11 @@ function WaterReport({ summary, farm }: { summary: WaterSummary; farm: Farm }) {
               <Stack gap="md">
                 {summary.allocations.map((allocation) => {
                   const color =
-                    allocation.usedPct >= 90 ? 'red' : allocation.usedPct >= 75 ? 'orange' : 'teal';
+                    allocation.usedPct >= 90
+                      ? 'red'
+                      : allocation.usedPct >= 75
+                        ? 'orange'
+                        : 'green';
                   return (
                     <Stack key={allocation.assetId} gap={4}>
                       <Group justify="space-between" wrap="nowrap">

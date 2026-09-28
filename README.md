@@ -79,19 +79,64 @@ The look is set in two places: `src/app/theme.ts` (Mantine theme: brand and stat
 Inter, type scale, radii, shadows, component defaults) and `src/styles/app.css` (surface tokens
 and the classes the theme attaches). Build screens from these pieces rather than one-off styles:
 
-- `PageHeader` (optional eyebrow, title, description, actions, back link) opens every page.
-- `StatCard` is the only metric tile: icon badge, sentence-case label, value (with `unit`), hint,
-  optional `to` link. Colour the icon by status and say why in the hint.
-- Cards use `<Card withBorder>`; tables inside a card use `padding={0}` and
-  `style={{ overflow: 'hidden' }}`. Rows or tiles inside a card use `.app-row` / `.app-tile`
+- `PageHeader` (optional eyebrow, title, one-line description, `help` tooltip, actions, back
+  link) opens every page. Keep the description to one line; explanations go in `help`.
+- Headline numbers use `MetricStrip` + `Metric` (one card divided into cells, never a grid of
+  icon tiles): label, value that eases in (`unit`), `Delta` against the previous period, hint,
+  optional `TrendLine` and `to` link. A status `tone` adds a dot; the hint says why in words.
+  The API returns the previous period for every headline figure (`previous*` on the dashboard,
+  `previous` on the water summary).
+- Lists filter through `FilterBar`: search, `FilterMenu`s ("Severity: Critical"), a
+  `SavedViewsMenu` (built-in views plus views saved in this browser), Reset, and the count.
+- Tables: wrap in `.app-table-scroll` inside `<Card withBorder padding={0} className="app-table-card">`
+  and pass `stickyHeader` so the header sticks on desktop and the table scrolls sideways on
+  phones. Sortable columns use `useSort` + `SortTh`; per-row actions use `.app-row-action` (they
+  show on hover, keyboard focus and always on touch).
+- Charts take `tooltipProps={chartTooltip({ series, format, footer })}`: a card with each series
+  and a line saying what the day means, plus a crosshair (or a column band for bars).
+  Annotations such as irrigation runs are Recharts elements passed as chart children.
+- Cards use `<Card withBorder>`. Rows inside a card use `.app-list-row` / `.app-row` / `.app-tile`
   rather than nested bordered cards.
+- Type: page title 28 (`h1`), card and section titles 16 (`h2`); weights 400, 500 and 600 only.
+- Motion is small and purposeful: pages and loaded content settle in (`.app-page`,
+  `.app-fade-in`), numbers ease in (`useCountUp`), and alert and work-order changes apply
+  optimistically and roll back on error. Everything respects `prefers-reduced-motion`.
+- Keyboard: ⌘K / Ctrl K or `/` opens the command palette (`src/app/command`): screens, the
+  current farm's fields and assets, farm switching and actions. Actions open dialogs through the
+  URL (`/irrigation?do=log-irrigation`), so they also work as links. `g` then a letter changes
+  screen; `?` lists the shortcuts.
 - Status is `<Badge variant="dot" color=…>` (a tinted pill with a dot) plus text. No coloured
   border strips, no uppercase micro labels.
 - `LoadingState layout="page"` for first loads (skeletons shaped like the page), `EmptyState`
   and `ErrorState` for the rest.
-- `brand` is the IrrigaIQ teal (actions, selection); `teal` is the success green.
+- Flat colour only: no gradients, glass or glows. The sidebar is deep slate (`#111817`) in both
+  schemes; the canvas is off-white `#F7F9F7` (dark `#0B1110`) behind white cards with a
+  `#DCE4E0` hairline (dark `#111817` cards, `#26332F` edges).
+- Colour is semantic, the same on every screen and chart:
+
+  | Mantine colour | Hex (light) | Means                                                     |
+  | -------------- | ----------- | --------------------------------------------------------- |
+  | `brand`        | `#174A3A`   | Deep forest: logo, primary actions, navigation, crop/soil |
+  | `teal`         | `#159A9C`   | Water: consumption, volumes, savings                      |
+  | `blue`         | `#3B82F6`   | Intelligence: AI insights, information, weather and rain  |
+  | `green`        | `#2E8B57`   | Healthy                                                   |
+  | `yellow`       | `#D99A24`   | Warning: moderate risk, due soon                          |
+  | `orange`       | `#CF6F35`   | Serious: act now, high risk                               |
+  | `red`          | `#C94B4B`   | Critical                                                  |
+
+  Each scale keeps its light colour at shade 7 and a lifted dark-mode colour at shade 6.
+  `cssVariablesResolver` (in `theme.ts`) darkens text in the lighter accents so words stay
+  readable, and uses translucent tints in dark mode. No purple anywhere.
+
+- AI-generated content sits in `.app-ai` (a faint blue wash and edge), never a blue interface.
+- Chart tokens in `styles/viz.css` follow the same meaning (`--viz-soil`, `--viz-water`,
+  `--viz-rain`, `--viz-temperature`, `--viz-equipment`, `--viz-critical`). Soil, water and rain
+  were validated together for colour-blind separation in both modes.
 - The Inter font is self-hosted (`@fontsource-variable/inter`), so it works under the
   production CSP.
+- Accessibility: WCAG 2.2 AA, audited with axe in both schemes (`docs/accessibility.md`);
+  `src/components/a11y.test.tsx` guards the shared components in CI. Before launch, run the farm
+  manager sessions in `docs/usability-test-plan.md`.
 
 ## Authentication
 

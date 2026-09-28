@@ -8,34 +8,32 @@ import {
   Group,
   Menu,
   ScrollArea,
-  SegmentedControl,
   SimpleGrid,
   Stack,
   Text,
-  TextInput,
   Title,
 } from '@mantine/core';
 import { modals } from '@mantine/modals';
 import {
-  IconCash,
   IconCheck,
-  IconClockPause,
   IconDots,
-  IconHeartbeat,
   IconPencil,
   IconPlayerPlay,
   IconPlus,
   IconRotate,
-  IconSearch,
   IconTool,
   IconX,
 } from '@tabler/icons-react';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 
+import { usePageCommand } from '@/app/command/usePageCommand';
+import { FilterBar, FilterMenu } from '@/components/filters/FilterBar';
+import { sameFilters, type SavedView } from '@/components/filters/savedViews';
+import { SavedViewsMenu } from '@/components/filters/SavedViewsMenu';
 import { PageHeader } from '@/components/PageHeader';
 import { EmptyState, ErrorState, LoadingState } from '@/components/QueryStates';
-import { StatCard } from '@/components/StatCard';
+import { Metric, MetricStrip } from '@/components/MetricStrip';
 import { RequireFarm } from '@/features/farms/components/RequireFarm';
 import type { Farm } from '@/features/farms/types';
 import { formatDate, formatDueIn, formatMoney, formatNumber, formatRelative } from '@/lib/format';
@@ -45,7 +43,7 @@ import { useWorkOrders, useWorkOrderTransition } from '../api';
 import { CompleteWorkOrderModal } from '../components/CompleteWorkOrderModal';
 import { WorkOrderFormModal } from '../components/WorkOrderFormModal';
 import { KIND, PRIORITY } from '../presentation';
-import type { WorkOrder, WorkOrderKind } from '../types';
+import type { WorkOrder, WorkOrderKind, WorkOrderPriority } from '../types';
 
 type Column = 'TODO' | 'IN_PROGRESS' | 'DONE';
 
@@ -81,6 +79,21 @@ function byUrgency(a: WorkOrder, b: WorkOrder): number {
   );
 }
 
+interface WorkOrderFilters {
+  search: string;
+  kind: WorkOrderKind | null;
+  priority: WorkOrderPriority | null;
+}
+
+const DEFAULT_FILTERS: WorkOrderFilters = { search: '', kind: null, priority: null };
+
+const PRESETS: SavedView<WorkOrderFilters>[] = [
+  { id: 'all', name: 'All work', filters: DEFAULT_FILTERS },
+  { id: 'urgent', name: 'Urgent', filters: { ...DEFAULT_FILTERS, priority: 'URGENT' } },
+  { id: 'predictive', name: 'Predictive', filters: { ...DEFAULT_FILTERS, kind: 'PREDICTIVE' } },
+  { id: 'repairs', name: 'Repairs', filters: { ...DEFAULT_FILTERS, kind: 'CORRECTIVE' } },
+];
+
 export function MaintenancePage() {
   return <RequireFarm>{(farm) => <MaintenanceBoard farm={farm} />}</RequireFarm>;
 }
@@ -88,9 +101,11 @@ export function MaintenancePage() {
 function MaintenanceBoard({ farm }: { farm: Farm }) {
   const orders = useWorkOrders(farm.id);
   const transition = useWorkOrderTransition(farm.id);
-  const [kind, setKind] = useState<'ALL' | WorkOrderKind>('ALL');
-  const [search, setSearch] = useState('');
+  const [filters, setFilters] = useState<WorkOrderFilters>(DEFAULT_FILTERS);
+  const { kind, priority, search } = filters;
+  const [command, clearCommand] = usePageCommand();
   const [editing, setEditing] = useState<WorkOrder | 'new' | null>(null);
+  const dialog = editing ?? (command === 'new-work-order' ? 'new' : null);
   const [completing, setCompleting] = useState<WorkOrder | null>(null);
 
   const all = useMemo(() => orders.data ?? [], [orders.data]);
@@ -98,13 +113,14 @@ function MaintenanceBoard({ farm }: { farm: Farm }) {
     const query = search.trim().toLowerCase();
     return all.filter(
       (order) =>
-        (kind === 'ALL' || order.kind === kind) &&
+        (kind == null || order.kind === kind) &&
+        (priority == null || order.priority === priority) &&
         (!query ||
           [order.reference, order.title, order.asset?.name, order.assignee]
             .filter(Boolean)
             .some((value) => value!.toLowerCase().includes(query))),
     );
-  }, [all, kind, search]);
+  }, [all, kind, priority, search]);
 
   const active = all.filter((order) => ['OPEN', 'SCHEDULED', 'IN_PROGRESS'].includes(order.status));
   const overdue = active.filter((order) => order.overdue).length;
@@ -146,7 +162,8 @@ function MaintenanceBoard({ farm }: { farm: Farm }) {
     <>
       <PageHeader
         title="Maintenance"
-        description="Preventive services, predictive jobs raised by health warnings, and repairs, from request to done. Completing a service restarts the asset's service clock."
+        description="Services, predictive jobs and repairs, from request to done."
+        help="Predictive jobs are raised by health warnings before a failure. Completing a service restarts the asset's service clock."
         actions={
           <Button leftSection={<IconPlus size={16} />} onClick={() => setEditing('new')}>
             New work order
@@ -159,59 +176,77 @@ function MaintenanceBoard({ farm }: { farm: Farm }) {
 
       {orders.data && (
         <>
-          <SimpleGrid cols={{ base: 2, md: 4 }} spacing="md" mb="xl">
-            <StatCard
-              label="Open jobs"
-              value={formatNumber(active.length)}
-              hint={`${overdue} overdue`}
-              icon={<IconTool size={16} />}
-              color={overdue ? 'red' : 'teal'}
-            />
-            <StatCard
-              label="Planned & predictive"
-              value={formatNumber(predictive)}
-              hint="Caught before failure"
-              icon={<IconHeartbeat size={16} />}
-              color="violet"
-            />
-            <StatCard
-              label="Spend, 30 days"
-              value={formatMoney(spend, farm.currency)}
-              hint={`${doneRecent.length} ${doneRecent.length === 1 ? 'job' : 'jobs'} completed`}
-              icon={<IconCash size={16} />}
-              color="blue"
-            />
-            <StatCard
-              label="Irrigation downtime"
-              value={formatNumber(downtime, 1)}
-              unit="h"
-              hint="From completed jobs, 30 days"
-              icon={<IconClockPause size={16} />}
-              color="gray"
-            />
-          </SimpleGrid>
+          <Box mb="xl">
+            <MetricStrip label="Maintenance at a glance">
+              <Metric
+                label="Open jobs"
+                value={active.length}
+                tone={overdue ? 'critical' : undefined}
+                hint={`${overdue} overdue`}
+              />
+              <Metric
+                label="Planned & predictive"
+                value={predictive}
+                hint="Caught before failure"
+              />
+              <Metric
+                label="Spend, 30 days"
+                value={formatMoney(spend, farm.currency)}
+                hint={`${doneRecent.length} ${doneRecent.length === 1 ? 'job' : 'jobs'} completed`}
+              />
+              <Metric
+                label="Irrigation downtime"
+                value={downtime}
+                format={(n) => formatNumber(n, 1)}
+                unit="h"
+                hint="From completed jobs, 30 days"
+              />
+            </MetricStrip>
+          </Box>
 
-          <Group mb="md" gap="sm">
-            <TextInput
-              placeholder="Search jobs, assets, people"
-              leftSection={<IconSearch size={16} />}
-              value={search}
-              onChange={(event) => setSearch(event.currentTarget.value)}
-              w={260}
-              aria-label="Search work orders"
-            />
-            <SegmentedControl
+          <FilterBar
+            search={{
+              value: search,
+              onChange: (value) => setFilters({ ...filters, search: value }),
+              placeholder: 'Search jobs, assets, people',
+              label: 'Search work orders',
+            }}
+            onReset={
+              sameFilters(filters, DEFAULT_FILTERS) ? undefined : () => setFilters(DEFAULT_FILTERS)
+            }
+            end={
+              <Text size="sm" c="dimmed" className="app-num">
+                {filtered.length} of {all.length}
+              </Text>
+            }
+          >
+            <FilterMenu
+              label="Type"
+              allLabel="All"
               value={kind}
-              onChange={(value) => setKind(value as 'ALL' | WorkOrderKind)}
-              data={[
-                { value: 'ALL', label: 'All' },
-                { value: 'PREVENTIVE', label: 'Preventive' },
-                { value: 'PREDICTIVE', label: 'Predictive' },
-                { value: 'CORRECTIVE', label: 'Repairs' },
-                { value: 'INSPECTION', label: 'Inspections' },
-              ]}
+              options={(Object.keys(KIND) as WorkOrderKind[]).map((value) => ({
+                value,
+                label: KIND[value].label,
+              }))}
+              onChange={(value) => setFilters({ ...filters, kind: value })}
             />
-          </Group>
+            <FilterMenu
+              label="Priority"
+              allLabel="All"
+              value={priority}
+              options={(Object.keys(PRIORITY) as WorkOrderPriority[]).map((value) => ({
+                value,
+                label: PRIORITY[value].label,
+              }))}
+              onChange={(value) => setFilters({ ...filters, priority: value })}
+            />
+            <SavedViewsMenu
+              storageKey="maintenance"
+              presets={PRESETS}
+              current={filters}
+              onApply={setFilters}
+            />
+          </FilterBar>
 
           {all.length === 0 ? (
             <EmptyState
@@ -229,7 +264,7 @@ function MaintenanceBoard({ farm }: { farm: Farm }) {
                   <Box key={column.key} p="sm" className="app-lane">
                     <Group justify="space-between" mb="sm" px={4} wrap="nowrap">
                       <div>
-                        <Title order={3} fz="sm">
+                        <Title order={2} fz="sm">
                           {column.title}
                         </Title>
                         <Text size="xs" c="dimmed">
@@ -271,10 +306,13 @@ function MaintenanceBoard({ farm }: { farm: Farm }) {
       )}
 
       <WorkOrderFormModal
-        opened={editing != null}
-        onClose={() => setEditing(null)}
+        opened={dialog != null}
+        onClose={() => {
+          setEditing(null);
+          clearCommand();
+        }}
         farmId={farm.id}
-        workOrder={editing && editing !== 'new' ? editing : undefined}
+        workOrder={dialog && dialog !== 'new' ? dialog : undefined}
       />
       <CompleteWorkOrderModal
         workOrder={completing}

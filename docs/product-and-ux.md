@@ -69,10 +69,11 @@ Operations screens are scoped to one farm, chosen in the farm switcher at the to
    its evidence and the action that recovers it. No black box, so a technician can argue with it,
    and it gives a baseline to compare trained models against.
 7. **Colour carries meaning, never alone.** One status scale everywhere (red critical or
-   stressed, orange act now, yellow soon, green fine, grey inactive), always with a text label.
-   The brand teal marks selection and primary actions only, so "healthy" never reads as
-   "selected".
-   Chart colours are a separate, colour-blind-validated palette in light and dark.
+   stressed, terracotta act now, amber soon or moderate, green healthy, grey inactive), always
+   with a text label. The rest of the palette is semantic and learned once: deep forest for the
+   brand and for crops and soil, teal for water, blue for weather and AI. Charts use the same
+   families (validated for colour-blind separation in light and dark), so green is always soil,
+   teal always water and blue always rain.
 8. **Charts that answer one question each.** The field page uses two aligned charts (soil water
    against the refill point; daily rain, irrigation and crop use) instead of one dual-axis chart,
    shades the forecast, labels thresholds, and has a table view. Filters sit in one row above the
@@ -81,11 +82,21 @@ Operations screens are scoped to one farm, chosen in the farm switcher at the to
    pumps and what feeds them); admins can load a demo farm to learn the product safely.
 10. **Everything recoverable.** Planned runs are skipped (with a reason), not deleted; work
     orders can be reopened; resolving an alert silences it for 24 hours rather than forever.
-11. **A calm, consistent surface.** The web and mobile apps share one visual language: a quiet
-    canvas with lifted white cards (hairline border, soft shadow; tone steps in dark mode), Inter
-    type with tabular numbers, sentence-case labels, status as a dot pill, and one metric card
-    shape everywhere. The day's most important task leads each overview as a "Next up" card, so
-    the first thing on screen is the next thing to do.
+11. **A calm, enterprise surface.** The web and mobile apps share one flat visual language, closer
+    to a fintech or intelligence platform than a farm app: an off-white canvas, white cards with
+    a soft-gray hairline, a deep-slate navigation, deep-forest primary actions, Inter type with
+    tabular numbers, sentence-case labels, status as a dot pill and one metric card shape
+    everywhere. No gradients, glass or neon. The day's most important task leads each overview
+    as a "Next up" card, and AI-written insight is marked with a faint blue edge.
+
+12. **Every number has context.** A headline figure is shown with how it moved against the
+    previous period of the same length ("↘ 12% vs prior 7 days", or "7.6×" for large jumps),
+    coloured only when the direction is good or bad news, and with a small trend line where the
+    daily shape matters. A raw number on its own invites the question "is that good?".
+13. **Fast for the people who use it every day.** ⌘K / Ctrl K finds any screen, field or asset
+    and starts common tasks; `g` then a letter moves between screens; lists share one filter bar
+    with saved views; tables sort and keep their header in view; alert and work-order changes
+    apply instantly.
 
 ## What sensors and AI will add, without redesigning the screens
 

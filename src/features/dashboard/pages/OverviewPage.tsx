@@ -7,22 +7,19 @@ import {
   Divider,
   Grid,
   Group,
-  SimpleGrid,
+  Skeleton,
   Stack,
+  Table,
   Text,
-  ThemeIcon,
   Title,
   UnstyledButton,
 } from '@mantine/core';
 import {
-  IconAlertTriangle,
   IconArrowRight,
-  IconBolt,
   IconCalendarDue,
   IconChecks,
+  IconChevronRight,
   IconDroplet,
-  IconEngine,
-  IconPigMoney,
   IconPlant2,
   IconSparkles,
   IconTool,
@@ -30,15 +27,16 @@ import {
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 
+import { Delta } from '@/components/Delta';
+import { Metric, MetricStrip } from '@/components/MetricStrip';
 import { PageHeader } from '@/components/PageHeader';
 import { EmptyState, ErrorState, LoadingState } from '@/components/QueryStates';
-import { StatCard } from '@/components/StatCard';
+import { TrendLine } from '@/components/TrendLine';
 import { useAuth } from '@/features/auth/useAuth';
+import { useBriefing } from '@/features/dashboard/api';
 import { RequireFarm } from '@/features/farms/components/RequireFarm';
 import type { Farm } from '@/features/farms/types';
-import { HealthRing } from '@/features/infrastructure/components/HealthRing';
-import { ASSET_TYPE, RISK } from '@/features/infrastructure/presentation';
-import { useBriefing } from '@/features/dashboard/api';
+import { RISK, scoreColor } from '@/features/infrastructure/presentation';
 import { useIrrigationEvents } from '@/features/irrigation/api';
 import { CompleteIrrigationModal } from '@/features/irrigation/components/CompleteIrrigationModal';
 import { SoilWaterMeter } from '@/features/irrigation/components/SoilWaterMeter';
@@ -57,7 +55,6 @@ import {
   formatDueIn,
   formatDuration,
   formatMoney,
-  formatNumber,
   formatPercent,
   formatVolume,
   formatWhen,
@@ -67,7 +64,7 @@ import {
 
 import { useDashboard } from '../api';
 import { WeatherStrip } from '../components/WeatherStrip';
-import type { Dashboard, Task, TaskKind } from '../types';
+import type { Dashboard, FieldTile, Task, TaskKind } from '../types';
 
 function greeting(date = new Date()): string {
   const hour = date.getHours();
@@ -76,11 +73,11 @@ function greeting(date = new Date()): string {
   return 'Good evening';
 }
 
-const TASK_STYLE: Record<TaskKind, { icon: typeof IconDroplet; color: string; label: string }> = {
-  IRRIGATE: { icon: IconDroplet, color: 'orange', label: 'Irrigation' },
-  CONFIRM_IRRIGATION: { icon: IconChecks, color: 'blue', label: 'Confirm' },
-  WORK_ORDER: { icon: IconTool, color: 'violet', label: 'Work order' },
-  BOOK_SERVICE: { icon: IconCalendarDue, color: 'yellow', label: 'Service' },
+const TASK: Record<TaskKind, { icon: typeof IconDroplet; label: string; action: string }> = {
+  IRRIGATE: { icon: IconDroplet, label: 'Irrigation', action: 'Plan it' },
+  CONFIRM_IRRIGATION: { icon: IconChecks, label: 'Confirm run', action: 'Confirm' },
+  WORK_ORDER: { icon: IconTool, label: 'Work order', action: 'Open' },
+  BOOK_SERVICE: { icon: IconCalendarDue, label: 'Service', action: 'Book' },
 };
 
 export function OverviewPage() {
@@ -97,22 +94,10 @@ function CommandCentre({ farm }: { farm: Farm }) {
       <PageHeader
         eyebrow={
           dashboard.data
-            ? `${formatDayLabel(dashboard.data.today)} · ${dashboard.data.farmName}${
-                dashboard.data.location ? `, ${dashboard.data.location}` : ''
-              }`
+            ? `${formatDayLabel(dashboard.data.today)} · ${dashboard.data.farmName}`
             : farm.name
         }
         title={`${greeting()}, ${firstName}`}
-        actions={
-          <Button
-            component={Link}
-            to="/intelligence"
-            variant="default"
-            leftSection={<IconSparkles size={16} />}
-          >
-            Today&apos;s briefing
-          </Button>
-        }
       />
       {dashboard.isPending && <LoadingState layout="page" label="Preparing today's plan…" />}
       {dashboard.isError && (
@@ -125,7 +110,6 @@ function CommandCentre({ farm }: { farm: Farm }) {
 
 function DashboardBody({ data, farm }: { data: Dashboard; farm: Farm }) {
   const navigate = useNavigate();
-  const briefing = useBriefing(farm.id);
   const actions = useIrrigationActions(farm.id);
   const today = new Date();
   const planned = useIrrigationEvents(farm.id, {
@@ -135,11 +119,6 @@ function DashboardBody({ data, farm }: { data: Dashboard; farm: Farm }) {
   });
   const [confirming, setConfirming] = useState<IrrigationEvent | null>(null);
   const [draft, setDraft] = useState<WorkOrderDraft | null>(null);
-
-  const byStatus = data.fields.byStatus;
-  const needNow = (byStatus.IRRIGATE_NOW ?? 0) + (byStatus.STRESSED ?? 0);
-  const atRisk = (data.assets.byRisk.HIGH ?? 0) + (data.assets.byRisk.CRITICAL ?? 0);
-  const openAlerts = data.alerts.open + data.alerts.acknowledged;
 
   const runTask = (task: Task) => {
     switch (task.kind) {
@@ -170,13 +149,10 @@ function DashboardBody({ data, farm }: { data: Dashboard; farm: Farm }) {
       }
     }
   };
-
-  const taskAction: Record<TaskKind, string> = {
-    IRRIGATE: 'Plan it',
-    CONFIRM_IRRIGATION: 'Confirm',
-    WORK_ORDER: 'Open',
-    BOOK_SERVICE: 'Book',
-  };
+  const busy = (task: Task) =>
+    task.kind === 'IRRIGATE' &&
+    actions.planningFieldId != null &&
+    actions.planningFieldId === task.fieldId;
 
   if (data.fields.total === 0 && data.assets.total === 0) {
     return (
@@ -201,262 +177,15 @@ function DashboardBody({ data, farm }: { data: Dashboard; farm: Farm }) {
   const [next, ...later] = data.tasks;
 
   return (
-    <Stack gap="lg">
-      <Box className="app-hero" p={{ base: 'lg', sm: 28 }}>
-        <Grid gap="xl" align="center">
-          <Grid.Col span={{ base: 12, md: 7 }}>
-            {next ? (
-              <Stack gap={10} align="flex-start">
-                <Group gap={8} wrap="nowrap">
-                  <Text size="xs" fw={600} className="app-glass-pill">
-                    Next up
-                  </Text>
-                  <Text size="sm" fw={500} opacity={0.8}>
-                    {TASK_STYLE[next.kind].label}
-                    {next.dueOn ? ` · due ${formatDueIn(next.dueOn)}` : ''}
-                  </Text>
-                </Group>
-                <Title order={2} c="white" fz={{ base: 22, sm: 26 }} lts={-0.6} lh={1.2}>
-                  {next.title}
-                </Title>
-                <Text size="sm" opacity={0.85} maw={560}>
-                  {next.detail}
-                </Text>
-                <Button
-                  variant="white"
-                  color="brand.8"
-                  mt={6}
-                  loading={next.kind === 'IRRIGATE' && actions.planningFieldId === next.fieldId}
-                  onClick={() => runTask(next)}
-                  rightSection={<IconArrowRight size={16} />}
-                >
-                  {taskAction[next.kind]}
-                </Button>
-              </Stack>
-            ) : (
-              <Stack gap={10} align="flex-start">
-                <Text size="xs" fw={600} className="app-glass-pill">
-                  All clear
-                </Text>
-                <Title order={2} c="white" fz={{ base: 22, sm: 26 }} lts={-0.6} lh={1.2}>
-                  Nothing needs doing today
-                </Title>
-                <Text size="sm" opacity={0.85} maw={560}>
-                  Fields are watered and no equipment is due. New work appears here as soon as a
-                  field dries down or an asset needs attention.
-                </Text>
-              </Stack>
-            )}
-          </Grid.Col>
-          <Grid.Col span={{ base: 12, md: 5 }}>
-            <Box className="app-glass" p="md">
-              <Group gap={8} mb={6} wrap="nowrap">
-                <IconSparkles size={16} />
-                <Text size="xs" fw={600} opacity={0.85}>
-                  Farm briefing
-                </Text>
-              </Group>
-              <Text fw={600} lh={1.35}>
-                {briefing.data?.headline ?? 'Reading the fields, weather and equipment…'}
-              </Text>
-              <Anchor
-                component={Link}
-                to="/intelligence"
-                size="sm"
-                c="white"
-                mt={8}
-                display="inline-block"
-                underline="always"
-              >
-                Read the full briefing
-              </Anchor>
-            </Box>
-          </Grid.Col>
-        </Grid>
-      </Box>
-
-      <SimpleGrid type="container" cols={{ base: 2, '560px': 3, '1180px': 6 }} spacing="md">
-        <StatCard
-          label="Need water now"
-          value={String(needNow)}
-          hint={`${byStatus.IRRIGATE_SOON ?? 0} more within 2 days · ${data.fields.planted} planted`}
-          icon={<IconDroplet size={16} />}
-          color={needNow > 0 ? 'orange' : 'teal'}
-          to="/irrigation"
-        />
-        <StatCard
-          label="Water this week"
-          value={formatVolume(data.water.weekAppliedM3)}
-          hint={
-            data.water.weekAdequacyPct != null
-              ? `${formatPercent(data.water.weekAdequacyPct)} of crop need`
-              : 'No crop demand this week'
-          }
-          icon={<IconDroplet size={16} />}
-          color="blue"
-          to="/water"
-        />
-        <StatCard
-          label="Saved, 30 days"
-          value={formatVolume(Math.max(0, data.water.monthSavedM3))}
-          hint={
-            data.water.monthSavedPct != null
-              ? `${formatPercent(data.water.monthSavedPct)} vs calendar schedule`
-              : 'vs calendar schedule'
-          }
-          icon={<IconPigMoney size={16} />}
-          color="teal"
-          to="/water"
-        />
-        <StatCard
-          label="Energy this week"
-          value={formatNumber(data.water.weekEnergyKwh)}
-          unit="kWh"
-          hint={
-            data.water.weekEnergyCost != null
-              ? `${formatMoney(data.water.weekEnergyCost, data.water.currency)} on grid`
-              : 'Pumping energy'
-          }
-          icon={<IconBolt size={16} />}
-          color="yellow"
-          to="/water"
-        />
-        <StatCard
-          label="Assets at risk"
-          value={String(atRisk)}
-          hint={`${data.assets.serviceOverdue} services overdue`}
-          icon={<IconEngine size={16} />}
-          color={atRisk > 0 ? 'red' : 'teal'}
-          to="/infrastructure"
-        />
-        <StatCard
-          label="Open alerts"
-          value={String(openAlerts)}
-          hint={`${data.alerts.critical} critical`}
-          icon={<IconAlertTriangle size={16} />}
-          color={data.alerts.critical > 0 ? 'red' : openAlerts > 0 ? 'orange' : 'teal'}
-          to="/alerts"
-        />
-      </SimpleGrid>
+    <Stack gap="lg" className="app-fade-in">
+      <FocusCard farmId={farm.id} next={next} busy={next ? busy(next) : false} onRun={runTask} />
+      <Metrics data={data} />
 
       <Grid gap="lg">
         <Grid.Col span={{ base: 12, lg: 7 }}>
           <Stack gap="lg">
-            {later.length > 0 && (
-              <Card withBorder>
-                <Group justify="space-between" mb="xs" wrap="nowrap">
-                  <div>
-                    <Title order={3} fz="lg">
-                      Also today
-                    </Title>
-                    <Text size="sm" c="dimmed">
-                      Water that protects yield first, then work that prevents breakdowns.
-                    </Text>
-                  </div>
-                  <Badge variant="light" color="gray" className="app-num">
-                    {later.length}
-                  </Badge>
-                </Group>
-                <Stack gap={0}>
-                  {later.map((task, index) => {
-                    const style = TASK_STYLE[task.kind];
-                    const planning =
-                      task.kind === 'IRRIGATE' && actions.planningFieldId === task.fieldId;
-                    return (
-                      <Box key={`${task.kind}-${index}`}>
-                        {index > 0 && <Divider color="var(--app-border)" ml={48} />}
-                        <Group wrap="nowrap" gap="md" py={12}>
-                          <ThemeIcon variant="light" color={style.color} radius="md" size={34}>
-                            <style.icon size={18} />
-                          </ThemeIcon>
-                          <Stack gap={2} style={{ flex: 1 }} miw={0}>
-                            <Text size="sm" fw={600} lineClamp={1}>
-                              {task.title}
-                            </Text>
-                            <Text size="xs" c="dimmed" lineClamp={2}>
-                              {task.detail}
-                              {task.dueOn ? ` · due ${formatDueIn(task.dueOn)}` : ''}
-                            </Text>
-                          </Stack>
-                          <Button
-                            size="xs"
-                            variant="default"
-                            loading={planning}
-                            onClick={() => runTask(task)}
-                          >
-                            {taskAction[task.kind]}
-                          </Button>
-                        </Group>
-                      </Box>
-                    );
-                  })}
-                </Stack>
-              </Card>
-            )}
-            <Card withBorder>
-              <Group justify="space-between" mb="md">
-                <Title order={3} fz="lg">
-                  Fields
-                </Title>
-                <Anchor component={Link} to="/irrigation" size="sm">
-                  Irrigation planner
-                </Anchor>
-              </Group>
-              {data.fields.items.length === 0 ? (
-                <Text size="sm" c="dimmed">
-                  No fields yet.
-                </Text>
-              ) : (
-                <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
-                  {data.fields.items.map((tile) => {
-                    const decision = DECISION[tile.decision];
-                    return (
-                      <UnstyledButton
-                        key={tile.fieldId}
-                        className="app-tile"
-                        onClick={() => navigate(`/farms/${farm.id}/fields/${tile.fieldId}`)}
-                        aria-label={`Open ${tile.name}`}
-                      >
-                        <Group justify="space-between" wrap="nowrap" mb={6}>
-                          <Stack gap={0} miw={0}>
-                            <Text size="sm" fw={600} truncate>
-                              {tile.name}
-                            </Text>
-                            <Text size="xs" c="dimmed" truncate>
-                              {tile.cropType ? humanize(tile.cropType) : 'No crop'}
-                              {tile.phase ? ` · ${PHASE_LABEL[tile.phase]}` : ''}
-                            </Text>
-                          </Stack>
-                          <Badge size="sm" variant="dot" color={WATER_STATUS[tile.status].color}>
-                            {decision.label}
-                          </Badge>
-                        </Group>
-                        <SoilWaterMeter
-                          depletionPct={tile.depletionPct}
-                          stressThresholdPct={tile.stressThresholdPct}
-                          status={tile.status}
-                          size="sm"
-                        />
-                        <Text size="xs" c="dimmed" mt={6}>
-                          {tile.nextPlannedAt
-                            ? `Planned ${formatWhen(tile.nextPlannedAt)}`
-                            : tile.decision === 'IRRIGATE_NOW' || tile.decision === 'IRRIGATE_SOON'
-                              ? `${formatVolume(tile.volumeM3)} · ${formatDuration(tile.durationMinutes)}${
-                                  tile.startTime ? ` from ${formatClock(tile.startTime)}` : ''
-                                }`
-                              : tile.irrigateOn
-                                ? `Next around ${formatDayLabel(tile.irrigateOn)}`
-                                : ' '}
-                          {tile.yieldAtRiskPct != null && tile.yieldAtRiskPct >= 1
-                            ? ` · ${formatPercent(tile.yieldAtRiskPct)} yield lost`
-                            : ''}
-                        </Text>
-                      </UnstyledButton>
-                    );
-                  })}
-                </SimpleGrid>
-              )}
-            </Card>
+            {later.length > 0 && <TaskList tasks={later} busy={busy} onRun={runTask} />}
+            <FieldsCard farmId={farm.id} fields={data.fields.items} />
           </Stack>
         </Grid.Col>
         <Grid.Col span={{ base: 12, lg: 5 }}>
@@ -469,80 +198,7 @@ function DashboardBody({ data, farm }: { data: Dashboard; farm: Farm }) {
                 layout="list"
               />
             </Card>
-            <Card withBorder>
-              <Group justify="space-between" mb="md">
-                <Title order={3} fz="lg">
-                  Infrastructure watch
-                </Title>
-                <Anchor component={Link} to="/infrastructure" size="sm">
-                  All {data.assets.total} assets
-                </Anchor>
-              </Group>
-              {data.assets.attention.length === 0 ? (
-                <Text size="sm" c="dimmed">
-                  {data.assets.total === 0
-                    ? 'Add pumps, sources and filters to get service forecasts and early failure warnings.'
-                    : 'Every asset is healthy and on its service plan.'}
-                </Text>
-              ) : (
-                <Stack gap={2} mx={-8}>
-                  {data.assets.attention.map((asset) => {
-                    const Icon = ASSET_TYPE[asset.type].icon;
-                    return (
-                      <UnstyledButton
-                        key={asset.assetId}
-                        className="app-row"
-                        onClick={() => navigate(`/farms/${farm.id}/assets/${asset.assetId}`)}
-                        aria-label={`Open ${asset.name}`}
-                      >
-                        <Group wrap="nowrap" gap="sm">
-                          <HealthRing score={asset.healthScore} size={46} />
-                          <Stack gap={0} style={{ flex: 1 }} miw={0}>
-                            <Group gap={6} wrap="nowrap">
-                              <Icon size={14} />
-                              <Text size="sm" fw={600} truncate>
-                                {asset.name}
-                              </Text>
-                            </Group>
-                            <Text size="xs" c="dimmed" lineClamp={1}>
-                              {asset.topFactor ?? RISK[asset.risk].description}
-                            </Text>
-                          </Stack>
-                          <Stack gap={2} align="flex-end">
-                            <Badge size="sm" variant="dot" color={RISK[asset.risk].color}>
-                              {RISK[asset.risk].label}
-                            </Badge>
-                            {asset.nextServiceOn && (
-                              <Text
-                                size="xs"
-                                c={daysFromToday(asset.nextServiceOn) < 0 ? 'red' : 'dimmed'}
-                              >
-                                {daysFromToday(asset.nextServiceOn) < 0
-                                  ? `Service overdue ${-daysFromToday(asset.nextServiceOn)} d`
-                                  : `Service ${formatDueIn(asset.nextServiceOn)}`}
-                              </Text>
-                            )}
-                          </Stack>
-                        </Group>
-                      </UnstyledButton>
-                    );
-                  })}
-                </Stack>
-              )}
-              <Divider color="var(--app-border)" mt="md" mb="sm" />
-              <Group gap="lg">
-                <Text size="xs" c="dimmed">
-                  Work orders: <b>{data.maintenance.open}</b> open ·{' '}
-                  <b>{data.maintenance.inProgress}</b> in progress
-                  {data.maintenance.overdue > 0 && (
-                    <Text span c="red" size="xs">
-                      {' '}
-                      · {data.maintenance.overdue} overdue
-                    </Text>
-                  )}
-                </Text>
-              </Group>
-            </Card>
+            <InfrastructureCard farmId={farm.id} data={data} />
           </Stack>
         </Grid.Col>
       </Grid>
@@ -559,5 +215,436 @@ function DashboardBody({ data, farm }: { data: Dashboard; farm: Farm }) {
         draft={draft ?? undefined}
       />
     </Stack>
+  );
+}
+
+/** The one message: what the farm needs today in a sentence, and the next thing to do about it. */
+function FocusCard({
+  farmId,
+  next,
+  busy,
+  onRun,
+}: {
+  farmId: string;
+  next: Task | undefined;
+  busy: boolean;
+  onRun: (task: Task) => void;
+}) {
+  const briefing = useBriefing(farmId);
+  const style = next ? TASK[next.kind] : null;
+  return (
+    <Card withBorder padding={0}>
+      <Box className="app-ai-wash" px={{ base: 'lg', sm: 28 }} py={{ base: 'lg', sm: 24 }}>
+        <Group justify="space-between" mb={10} wrap="nowrap">
+          <Group gap={6} wrap="nowrap" className="app-ai-label">
+            <IconSparkles size={14} />
+            AI insight
+          </Group>
+          <Anchor component={Link} to="/intelligence" size="sm">
+            Full briefing
+          </Anchor>
+        </Group>
+        {briefing.data ? (
+          <Title order={2} fz={{ base: 20, sm: 24 }} fw={600} lts={-0.4} lh={1.3} maw={820}>
+            {briefing.data.headline}
+          </Title>
+        ) : (
+          <Skeleton h={26} w="70%" radius="sm" aria-label="Loading the briefing" />
+        )}
+      </Box>
+      <Divider color="var(--app-border)" />
+      <Group
+        component="section"
+        aria-label="Next up"
+        px={{ base: 'lg', sm: 28 }}
+        py={16}
+        justify="space-between"
+        gap="md"
+        wrap="wrap"
+      >
+        {next && style ? (
+          <>
+            <Group gap="md" wrap="nowrap" miw={0} style={{ flex: '1 1 320px' }}>
+              <Badge variant="light" color="brand" size="sm">
+                Next up
+              </Badge>
+              <Box miw={0}>
+                <Text fw={600} truncate>
+                  {next.title}
+                </Text>
+                <Text size="sm" c="dimmed" truncate>
+                  {style.label} · {next.detail}
+                  {next.dueOn ? ` · due ${formatDueIn(next.dueOn)}` : ''}
+                </Text>
+              </Box>
+            </Group>
+            <Button
+              loading={busy}
+              onClick={() => onRun(next)}
+              rightSection={<IconArrowRight size={16} />}
+            >
+              {style.action}
+            </Button>
+          </>
+        ) : (
+          <Group gap="sm">
+            <Badge variant="dot" color="green" size="sm">
+              All clear
+            </Badge>
+            <Text size="sm" c="dimmed">
+              Fields are watered and no equipment is due.
+            </Text>
+          </Group>
+        )}
+      </Group>
+    </Card>
+  );
+}
+
+function Metrics({ data }: { data: Dashboard }) {
+  const { water, fields, assets } = data;
+  // An older API without the daily series (mid-deploy) shows the numbers without trend lines.
+  const daily = water.daily ?? [];
+  const needNow = (fields.byStatus.IRRIGATE_NOW ?? 0) + (fields.byStatus.STRESSED ?? 0);
+  const atRisk = (assets.byRisk.HIGH ?? 0) + (assets.byRisk.CRITICAL ?? 0);
+  return (
+    <MetricStrip label="Key numbers">
+      <Metric
+        label="Water applied, 7 days"
+        value={water.weekAppliedM3}
+        unit="m³"
+        delta={
+          <Delta
+            current={water.weekAppliedM3}
+            previous={water.previousWeekAppliedM3}
+            period="prior 7 days"
+          />
+        }
+        hint={
+          water.weekAdequacyPct != null
+            ? `${formatPercent(water.weekAdequacyPct)} of crop need`
+            : 'No crop demand this week'
+        }
+        trend={
+          <TrendLine
+            values={daily.map((day) => day.appliedM3)}
+            color="var(--viz-water)"
+            variant="bars"
+            label="Water applied per day, last 30 days"
+          />
+        }
+        to="/water"
+      />
+      <Metric
+        label="Saved, 30 days"
+        value={Math.max(0, water.monthSavedM3)}
+        unit="m³"
+        delta={
+          <Delta
+            current={water.monthSavedM3}
+            previous={water.previousMonthSavedM3}
+            good="up"
+            period="prior 30 days"
+          />
+        }
+        hint={
+          water.monthSavedPct != null
+            ? `${formatPercent(water.monthSavedPct)} less than a calendar schedule`
+            : 'Against a calendar schedule'
+        }
+        to="/water"
+      />
+      <Metric
+        label="Pumping energy, 7 days"
+        value={water.weekEnergyKwh}
+        unit="kWh"
+        delta={
+          <Delta
+            current={water.weekEnergyKwh}
+            previous={water.previousWeekEnergyKwh}
+            good="down"
+            period="prior 7 days"
+          />
+        }
+        hint={
+          water.weekEnergyCost != null
+            ? `${formatMoney(water.weekEnergyCost, water.currency)} on grid power`
+            : 'Solar or no tariff set'
+        }
+        trend={
+          <TrendLine
+            values={daily.map((day) => day.energyKwh)}
+            color="var(--viz-equipment)"
+            variant="bars"
+            label="Pumping energy per day, last 30 days"
+          />
+        }
+        to="/water"
+      />
+      <Metric
+        label="Fields to water"
+        value={needNow}
+        tone={needNow > 0 ? 'serious' : 'good'}
+        hint={`${fields.byStatus.IRRIGATE_SOON ?? 0} more within 2 days · ${fields.planted} planted`}
+        to="/irrigation"
+      />
+      <Metric
+        label="Assets at risk"
+        value={atRisk}
+        tone={atRisk > 0 ? 'critical' : 'good'}
+        hint={`${assets.serviceOverdue} ${assets.serviceOverdue === 1 ? 'service' : 'services'} overdue`}
+        to="/infrastructure"
+      />
+    </MetricStrip>
+  );
+}
+
+function TaskList({
+  tasks,
+  busy,
+  onRun,
+}: {
+  tasks: Task[];
+  busy: (task: Task) => boolean;
+  onRun: (task: Task) => void;
+}) {
+  return (
+    <Card withBorder padding={0}>
+      <Group justify="space-between" px="lg" pt="lg" pb="xs">
+        <Title order={2}>Also today</Title>
+        <Text size="sm" c="dimmed" className="app-num">
+          {tasks.length} {tasks.length === 1 ? 'task' : 'tasks'}
+        </Text>
+      </Group>
+      <Stack gap={0} pb={6}>
+        {tasks.map((task, index) => {
+          const style = TASK[task.kind];
+          const overdue = task.dueOn != null && daysFromToday(task.dueOn) < 0;
+          return (
+            <Group
+              key={`${task.kind}-${index}`}
+              wrap="nowrap"
+              gap="md"
+              px="lg"
+              py={10}
+              className="app-list-row"
+            >
+              <style.icon size={18} stroke={1.7} color="var(--app-text-muted)" aria-hidden />
+              <Box style={{ flex: 1 }} miw={0}>
+                <Text size="sm" fw={500} truncate>
+                  {task.title}
+                </Text>
+                <Text size="xs" c="dimmed" truncate>
+                  {style.label} · {task.detail}
+                </Text>
+              </Box>
+              {task.dueOn && (
+                <Text
+                  size="xs"
+                  c={overdue ? 'red' : 'dimmed'}
+                  fw={overdue ? 600 : undefined}
+                  className="app-num"
+                  style={{ whiteSpace: 'nowrap' }}
+                >
+                  {overdue ? `${-daysFromToday(task.dueOn)} d overdue` : formatDueIn(task.dueOn)}
+                </Text>
+              )}
+              <Button
+                size="xs"
+                variant="default"
+                loading={busy(task)}
+                onClick={() => onRun(task)}
+                className="app-row-action"
+                aria-label={`${style.action}: ${task.title}`}
+              >
+                {style.action}
+              </Button>
+            </Group>
+          );
+        })}
+      </Stack>
+    </Card>
+  );
+}
+
+function nextStep(tile: FieldTile): string {
+  if (tile.nextPlannedAt) return `Planned ${formatWhen(tile.nextPlannedAt)}`;
+  if (tile.decision === 'IRRIGATE_NOW' || tile.decision === 'IRRIGATE_SOON') {
+    return `${formatVolume(tile.volumeM3)} · ${formatDuration(tile.durationMinutes)}${
+      tile.startTime ? ` from ${formatClock(tile.startTime)}` : ''
+    }`;
+  }
+  if (tile.irrigateOn) return `Next around ${formatDayLabel(tile.irrigateOn)}`;
+  return '—';
+}
+
+function FieldsCard({ farmId, fields }: { farmId: string; fields: FieldTile[] }) {
+  const navigate = useNavigate();
+  return (
+    <Card withBorder padding={0} className="app-table-card">
+      <Group justify="space-between" px="lg" pt="lg" pb="sm">
+        <Title order={2}>Fields</Title>
+        <Anchor component={Link} to="/irrigation" size="sm">
+          Irrigation planner
+        </Anchor>
+      </Group>
+      {fields.length === 0 ? (
+        <Text size="sm" c="dimmed" px="lg" pb="lg">
+          No fields yet.
+        </Text>
+      ) : (
+        <div className="app-table-scroll">
+          <Table highlightOnHover miw={620} verticalSpacing={10}>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>Field</Table.Th>
+                <Table.Th w={130}>Soil water</Table.Th>
+                <Table.Th>Status</Table.Th>
+                <Table.Th>Next</Table.Th>
+                <Table.Th w={36}>
+                  <span className="app-visually-hidden">Open</span>
+                </Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {fields.map((tile) => (
+                <Table.Tr
+                  key={tile.fieldId}
+                  onClick={() => navigate(`/farms/${farmId}/fields/${tile.fieldId}`)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <Table.Td>
+                    <Anchor
+                      component={Link}
+                      to={`/farms/${farmId}/fields/${tile.fieldId}`}
+                      c="var(--mantine-color-text)"
+                      fw={600}
+                      size="sm"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      {tile.name}
+                    </Anchor>
+                    <Text size="xs" c="dimmed" truncate>
+                      {tile.cropType ? humanize(tile.cropType) : 'No crop'}
+                      {tile.phase ? ` · ${PHASE_LABEL[tile.phase]}` : ''}
+                    </Text>
+                  </Table.Td>
+                  <Table.Td>
+                    <SoilWaterMeter
+                      depletionPct={tile.depletionPct}
+                      stressThresholdPct={tile.stressThresholdPct}
+                      status={tile.status}
+                      size="sm"
+                      showLabels={false}
+                    />
+                  </Table.Td>
+                  <Table.Td style={{ whiteSpace: 'nowrap' }}>
+                    <Badge size="sm" variant="dot" color={WATER_STATUS[tile.status].color}>
+                      {DECISION[tile.decision].label}
+                    </Badge>
+                  </Table.Td>
+                  <Table.Td>
+                    <Text size="sm" className="app-num">
+                      {nextStep(tile)}
+                    </Text>
+                    {tile.yieldAtRiskPct != null && tile.yieldAtRiskPct >= 1 && (
+                      <Text size="xs" c="orange">
+                        {formatPercent(tile.yieldAtRiskPct)} yield lost so far
+                      </Text>
+                    )}
+                  </Table.Td>
+                  <Table.Td>
+                    <IconChevronRight size={16} color="var(--app-text-muted)" aria-hidden />
+                  </Table.Td>
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function InfrastructureCard({ farmId, data }: { farmId: string; data: Dashboard }) {
+  const navigate = useNavigate();
+  const { assets, maintenance } = data;
+  return (
+    <Card withBorder padding={0}>
+      <Group justify="space-between" px="lg" pt="lg" pb="xs">
+        <Title order={2}>Infrastructure watch</Title>
+        <Anchor component={Link} to="/infrastructure" size="sm">
+          All {assets.total}
+        </Anchor>
+      </Group>
+      {assets.attention.length === 0 ? (
+        <Text size="sm" c="dimmed" px="lg" pb="md">
+          {assets.total === 0
+            ? 'Add pumps, sources and filters to get service forecasts and early failure warnings.'
+            : 'Every asset is healthy and on its service plan.'}
+        </Text>
+      ) : (
+        <Stack gap={0}>
+          {assets.attention.map((asset) => {
+            const days = asset.nextServiceOn ? daysFromToday(asset.nextServiceOn) : null;
+            return (
+              <UnstyledButton
+                key={asset.assetId}
+                display="block"
+                w="100%"
+                className="app-list-row"
+                px="lg"
+                py={10}
+                onClick={() => navigate(`/farms/${farmId}/assets/${asset.assetId}`)}
+                aria-label={`${asset.name}: health ${asset.healthScore}, ${RISK[asset.risk].label}`}
+              >
+                <Group wrap="nowrap" gap="md">
+                  <Text
+                    fw={600}
+                    fz="lg"
+                    w={32}
+                    ta="right"
+                    c={scoreColor(asset.healthScore)}
+                    className="app-num"
+                  >
+                    {asset.healthScore}
+                  </Text>
+                  <Box style={{ flex: 1 }} miw={0}>
+                    <Text size="sm" fw={500} truncate>
+                      {asset.name}
+                    </Text>
+                    <Text size="xs" c="dimmed" truncate>
+                      {asset.topFactor ?? RISK[asset.risk].description}
+                    </Text>
+                  </Box>
+                  {days != null && (
+                    <Text
+                      size="xs"
+                      c={days < 0 ? 'red' : 'dimmed'}
+                      fw={days < 0 ? 600 : undefined}
+                      style={{ whiteSpace: 'nowrap' }}
+                    >
+                      {days < 0
+                        ? `Service ${-days} d overdue`
+                        : `Service ${formatDueIn(asset.nextServiceOn)}`}
+                    </Text>
+                  )}
+                </Group>
+              </UnstyledButton>
+            );
+          })}
+        </Stack>
+      )}
+      <Divider color="var(--app-border)" />
+      <Text size="xs" c="dimmed" px="lg" py="sm">
+        Work orders: <b>{maintenance.open}</b> open · <b>{maintenance.inProgress}</b> in progress
+        {maintenance.overdue > 0 && (
+          <Text span c="red" size="xs">
+            {' '}
+            · {maintenance.overdue} overdue
+          </Text>
+        )}
+      </Text>
+    </Card>
   );
 }

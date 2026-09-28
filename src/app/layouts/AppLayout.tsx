@@ -7,6 +7,7 @@ import {
   Burger,
   Group,
   Indicator,
+  Kbd,
   Menu,
   ScrollArea,
   Stack,
@@ -18,6 +19,7 @@ import {
 import { useDisclosure, useMediaQuery } from '@mantine/hooks';
 import {
   IconBell,
+  IconSearch,
   IconLogout,
   IconMoon,
   IconSelector,
@@ -26,6 +28,10 @@ import {
 } from '@tabler/icons-react';
 import { Link, Outlet, useLocation } from 'react-router';
 
+import { CommandPalette } from '@/app/command/CommandPalette';
+import { MOD_KEY, palette } from '@/app/command/palette';
+import { ShortcutsModal } from '@/app/command/ShortcutsModal';
+import { useKeyboardShortcuts } from '@/app/command/useKeyboardShortcuts';
 import { NAVIGATION, isActive, type NavItem } from '@/app/navigation';
 import { Brand } from '@/components/Brand';
 import { useAlerts } from '@/features/alerts/api';
@@ -61,7 +67,7 @@ function AlertsBell() {
       disabled={count === 0}
       label={count > 9 ? '9+' : count}
       size={16}
-      color={critical ? 'red' : 'orange'}
+      color={critical ? 'red' : 'yellow'}
       offset={4}
     >
       <ActionIcon
@@ -172,6 +178,8 @@ function UserButton({ onNavigate }: { onNavigate: () => void }) {
 
 export function AppLayout() {
   const [opened, { toggle, close }] = useDisclosure(false);
+  const [shortcutsOpened, shortcuts] = useDisclosure(false);
+  useKeyboardShortcuts(shortcuts.open);
   const desktop = useMediaQuery('(min-width: 48em)', true, { getInitialValueInEffect: false });
   const { hasRole } = useAuth();
   const { pathname } = useLocation();
@@ -187,17 +195,20 @@ export function AppLayout() {
       padding={{ base: 'md', sm: 'lg', lg: 40 }}
       classNames={{ navbar: 'app-shell-navbar', header: 'app-shell-header' }}
     >
-      <AppShell.Header>
-        <Group h="100%" px="md" justify="space-between" wrap="nowrap">
-          <Group gap="sm" wrap="nowrap">
-            <Burger opened={opened} onClick={toggle} size="sm" aria-label="Toggle navigation" />
-            <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }} onClick={close}>
-              <Brand />
-            </Link>
+      {/* Phones only: on wider screens the sidebar carries the brand, so there is no second banner. */}
+      {!desktop && (
+        <AppShell.Header>
+          <Group h="100%" px="md" justify="space-between" wrap="nowrap">
+            <Group gap="sm" wrap="nowrap">
+              <Burger opened={opened} onClick={toggle} size="sm" aria-label="Toggle navigation" />
+              <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }} onClick={close}>
+                <Brand />
+              </Link>
+            </Group>
+            <AlertsBell />
           </Group>
-          <AlertsBell />
-        </Group>
-      </AppShell.Header>
+        </AppShell.Header>
+      )}
 
       <AppShell.Navbar p={12}>
         <AppShell.Section visibleFrom="sm" px={6} pt={6} pb={16}>
@@ -206,7 +217,24 @@ export function AppLayout() {
           </Link>
         </AppShell.Section>
         <AppShell.Section pb={16}>
-          <FarmSwitcher onNavigate={close} />
+          <Stack gap={8}>
+            <FarmSwitcher onNavigate={close} />
+            <UnstyledButton
+              className="app-search-button"
+              onClick={() => {
+                close();
+                palette.open();
+              }}
+              aria-label={`Search and commands (${MOD_KEY} K)`}
+            >
+              <IconSearch size={16} stroke={1.8} />
+              <Text span size="sm" style={{ flex: 1 }}>
+                Search
+              </Text>
+              <Kbd size="xs">{MOD_KEY}</Kbd>
+              <Kbd size="xs">K</Kbd>
+            </UnstyledButton>
+          </Stack>
         </AppShell.Section>
         <AppShell.Section grow component={ScrollArea} mx={-12} px={12}>
           <Stack gap={20} pb="md">
@@ -240,10 +268,12 @@ export function AppLayout() {
       </AppShell.Navbar>
 
       <AppShell.Main>
-        <Box maw={1240} mx="auto" pb="xl">
+        <Box maw={1240} mx="auto" pb="xl" key={pathname} className="app-page">
           <Outlet />
         </Box>
       </AppShell.Main>
+      <CommandPalette onShowShortcuts={shortcuts.open} />
+      <ShortcutsModal opened={shortcutsOpened} onClose={shortcuts.close} />
     </AppShell>
   );
 }

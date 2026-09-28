@@ -40,11 +40,11 @@ export const assetsApi = {
     http.post<ConditionCheck>(`${base(farmId)}/${assetId}/condition-checks`, input),
 };
 
-export function useAssets(farmId: string | undefined) {
+export function useAssets(farmId: string | undefined, enabled = true) {
   return useQuery({
     queryKey: assetKeys.list(farmId ?? ''),
     queryFn: () => assetsApi.list(farmId ?? ''),
-    enabled: Boolean(farmId),
+    enabled: Boolean(farmId) && enabled,
   });
 }
 

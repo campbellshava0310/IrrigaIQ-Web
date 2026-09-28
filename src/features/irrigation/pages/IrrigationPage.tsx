@@ -1,21 +1,7 @@
+import { Badge, Box, Button, Card, SimpleGrid, Stack, Tabs, Text } from '@mantine/core';
 import {
-  Badge,
-  Button,
-  Card,
-  Group,
-  SegmentedControl,
-  Select,
-  SimpleGrid,
-  Stack,
-  Tabs,
-  Text,
-} from '@mantine/core';
-import {
-  IconBolt,
   IconCalendarEvent,
   IconCalendarPlus,
-  IconCircleCheck,
-  IconClock,
   IconDroplet,
   IconHistory,
   IconLayoutGrid,
@@ -23,9 +9,11 @@ import {
 } from '@tabler/icons-react';
 import { useMemo, useState } from 'react';
 
+import { usePageCommand } from '@/app/command/usePageCommand';
+import { FilterBar, FilterMenu } from '@/components/filters/FilterBar';
 import { PageHeader } from '@/components/PageHeader';
 import { EmptyState, ErrorState, LoadingState } from '@/components/QueryStates';
-import { StatCard } from '@/components/StatCard';
+import { Metric, MetricStrip } from '@/components/MetricStrip';
 import { RequireFarm } from '@/features/farms/components/RequireFarm';
 import type { Farm } from '@/features/farms/types';
 import { addDays, formatMoney, formatNumber, formatVolume, toIsoDate } from '@/lib/format';
@@ -61,6 +49,7 @@ function IrrigationWorkspace({ farm }: { farm: Farm }) {
   const actions = useIrrigationActions(farm.id);
   const [tab, setTab] = useState<string | null>('fields');
   const [filter, setFilter] = useState<Filter>('ALL');
+  const [command, clearCommand] = usePageCommand();
   const [logTarget, setLogTarget] = useState<{
     fieldId?: string;
     mode: 'COMPLETED' | 'PLANNED';
@@ -68,6 +57,15 @@ function IrrigationWorkspace({ farm }: { farm: Farm }) {
   const [soilTarget, setSoilTarget] = useState<FieldStatus | null>(null);
   const [setupTarget, setSetupTarget] = useState<FieldStatus | null>(null);
   const [confirming, setConfirming] = useState<IrrigationEvent | null>(null);
+
+  // The palette opens the log dialog with ?do=log-irrigation or ?do=plan-irrigation.
+  const logDialog =
+    logTarget ??
+    (command === 'log-irrigation'
+      ? { mode: 'COMPLETED' as const }
+      : command === 'plan-irrigation'
+        ? { mode: 'PLANNED' as const }
+        : null);
 
   const fields = useMemo(
     () =>
@@ -100,7 +98,8 @@ function IrrigationWorkspace({ farm }: { farm: Farm }) {
     <>
       <PageHeader
         title="Irrigation"
-        description="What each field needs today, from a daily soil water balance driven by the forecast, crop stage and soil, and calibrated by your soil checks."
+        description="What each field needs today, and when."
+        help="Recommendations come from a daily soil water balance (FAO-56) driven by the forecast, crop stage and soil, and calibrated by your soil checks."
         actions={
           <>
             <Button
@@ -135,48 +134,39 @@ function IrrigationWorkspace({ farm }: { farm: Farm }) {
 
       {fields.length > 0 && (
         <>
-          <SimpleGrid cols={{ base: 2, md: 4 }} spacing="md" mb="xl">
-            <StatCard
-              label="Need water today"
-              value={String(
-                fields.filter((f) => f.recommendation.decision === 'IRRIGATE_NOW').length,
-              )}
-              hint={todayVolume > 0 ? `${formatVolume(todayVolume)} in total` : 'Nothing urgent'}
-              icon={<IconDroplet size={16} />}
-              color="orange"
-            />
-            <StatCard
-              label="Within 2 days"
-              value={String(
-                fields.filter((f) => f.recommendation.decision === 'IRRIGATE_SOON').length,
-              )}
-              hint="Plan ahead of the stress point"
-              icon={<IconClock size={16} />}
-              color="yellow"
-            />
-            <StatCard
-              label="On track"
-              value={String(
-                fields.filter((f) =>
-                  ['ON_TRACK', 'SCHEDULED', 'HOLD_FOR_RAIN'].includes(f.recommendation.decision),
-                ).length,
-              )}
-              hint="Includes scheduled runs and rain holds"
-              icon={<IconCircleCheck size={16} />}
-              color="teal"
-            />
-            <StatCard
-              label="Energy for today's runs"
-              value={todayCost > 0 ? formatMoney(todayCost, farm.currency) : '—'}
-              hint={
-                farm.electricityTariff != null
-                  ? `At ${formatMoney(farm.electricityTariff, farm.currency)}/kWh; solar is free`
-                  : 'Set a tariff on the farm to cost runs'
-              }
-              icon={<IconBolt size={16} />}
-              color="yellow"
-            />
-          </SimpleGrid>
+          <Box mb="xl">
+            <MetricStrip label="Irrigation at a glance">
+              <Metric
+                label="Need water today"
+                value={fields.filter((f) => f.recommendation.decision === 'IRRIGATE_NOW').length}
+                tone={todayVolume > 0 ? 'serious' : 'good'}
+                hint={todayVolume > 0 ? `${formatVolume(todayVolume)} in total` : 'Nothing urgent'}
+              />
+              <Metric
+                label="Within 2 days"
+                value={fields.filter((f) => f.recommendation.decision === 'IRRIGATE_SOON').length}
+                hint="Plan ahead of the stress point"
+              />
+              <Metric
+                label="On track"
+                value={
+                  fields.filter((f) =>
+                    ['ON_TRACK', 'SCHEDULED', 'HOLD_FOR_RAIN'].includes(f.recommendation.decision),
+                  ).length
+                }
+                hint="Includes scheduled runs and rain holds"
+              />
+              <Metric
+                label="Energy for today's runs"
+                value={todayCost > 0 ? formatMoney(todayCost, farm.currency) : '—'}
+                hint={
+                  farm.electricityTariff != null
+                    ? `At ${formatMoney(farm.electricityTariff, farm.currency)}/kWh; solar is free`
+                    : 'Set a tariff on the farm to cost runs'
+                }
+              />
+            </MetricStrip>
+          </Box>
 
           <Tabs value={tab} onChange={setTab} keepMounted={false}>
             <Tabs.List mb="md">
@@ -208,22 +198,25 @@ function IrrigationWorkspace({ farm }: { farm: Farm }) {
             </Tabs.List>
 
             <Tabs.Panel value="fields">
-              <Group justify="space-between" mb="md">
-                <SegmentedControl
+              <FilterBar
+                onReset={filter === 'ALL' ? undefined : () => setFilter('ALL')}
+                end={
+                  <Text size="sm" c="dimmed" className="app-num">
+                    {status.isFetching ? 'Updating…' : `${visible.length} of ${fields.length}`}
+                  </Text>
+                }
+              >
+                <FilterMenu
+                  label="Show"
                   value={filter}
-                  onChange={(value) => setFilter(value as Filter)}
-                  data={[
-                    { value: 'ALL', label: `All (${fields.length})` },
+                  options={[
+                    { value: 'ALL', label: `All fields (${fields.length})` },
                     { value: 'NEEDS_WATER', label: `Needs water (${needsWater.length})` },
                     { value: 'OK', label: `Fine (${fields.length - needsWater.length})` },
                   ]}
+                  onChange={(value) => value && setFilter(value)}
                 />
-                {status.isFetching && (
-                  <Text size="xs" c="dimmed">
-                    Updating…
-                  </Text>
-                )}
-              </Group>
+              </FilterBar>
               {visible.length === 0 ? (
                 <EmptyState
                   icon={<IconDroplet size={24} />}
@@ -269,12 +262,15 @@ function IrrigationWorkspace({ farm }: { farm: Farm }) {
       )}
 
       <LogIrrigationModal
-        opened={logTarget != null}
-        onClose={() => setLogTarget(null)}
+        opened={logDialog != null}
+        onClose={() => {
+          setLogTarget(null);
+          clearCommand();
+        }}
         farmId={farm.id}
         fields={fieldOptions}
-        fieldId={logTarget?.fieldId}
-        mode={logTarget?.mode}
+        fieldId={logDialog?.fieldId}
+        mode={logDialog?.mode}
       />
       <SoilCheckModal
         opened={soilTarget != null}
@@ -338,7 +334,7 @@ function ScheduleTab({
           balance stays true.
         </Text>
       )}
-      <Card withBorder padding={0} style={{ overflow: 'hidden' }}>
+      <Card withBorder padding={0} className="app-table-card">
         <EventsTable events={planned} onConfirm={onConfirm} onSkip={onSkip} onDelete={onDelete} />
       </Card>
       <Text size="xs" c="dimmed">
@@ -371,27 +367,40 @@ function HistoryTab({
     .sort((a, b) => b.startedAt.localeCompare(a.startedAt));
 
   return (
-    <Stack>
-      <Group>
-        <SegmentedControl
+    <Stack gap={0}>
+      <FilterBar
+        onReset={
+          days === '30' && fieldId == null
+            ? undefined
+            : () => {
+                setDays('30');
+                setFieldId(null);
+              }
+        }
+        end={
+          <Text size="sm" c="dimmed" className="app-num">
+            {history.length} {history.length === 1 ? 'run' : 'runs'}
+          </Text>
+        }
+      >
+        <FilterMenu
+          label="Period"
           value={days}
-          onChange={setDays}
-          data={[
-            { value: '7', label: '7 days' },
-            { value: '30', label: '30 days' },
-            { value: '90', label: '90 days' },
+          options={[
+            { value: '7', label: 'Last 7 days' },
+            { value: '30', label: 'Last 30 days' },
+            { value: '90', label: 'Last 90 days' },
           ]}
+          onChange={(value) => value && setDays(value)}
         />
-        <Select
-          placeholder="All fields"
-          data={fields.map((field) => ({ value: field.id, label: field.name }))}
+        <FilterMenu
+          label="Field"
+          allLabel="All"
           value={fieldId}
+          options={fields.map((field) => ({ value: field.id, label: field.name }))}
           onChange={setFieldId}
-          clearable
-          w={220}
-          aria-label="Filter by field"
         />
-      </Group>
+      </FilterBar>
       {events.isPending && <LoadingState />}
       {events.isError && <ErrorState error={events.error} onRetry={() => events.refetch()} />}
       {events.data && history.length === 0 && (
@@ -405,7 +414,8 @@ function HistoryTab({
         <Card
           withBorder
           padding={0}
-          style={{ overflow: 'hidden', opacity: events.isPlaceholderData ? 0.6 : 1 }}
+          className="app-table-card"
+          style={{ opacity: events.isPlaceholderData ? 0.6 : 1 }}
         >
           <EventsTable events={history} showField={!fieldId} onDelete={onDelete} />
         </Card>

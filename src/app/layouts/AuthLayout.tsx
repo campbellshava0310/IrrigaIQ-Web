@@ -2,8 +2,8 @@ import { Box, Group, SimpleGrid, Stack, Text, Title } from '@mantine/core';
 import {
   IconCalendarClock,
   IconDroplet,
+  IconDroplets,
   IconEngine,
-  IconPlant2,
   IconShieldCheck,
 } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
@@ -22,60 +22,68 @@ const VALUE = [
 function ProductGlimpse() {
   return (
     <Stack gap={12} aria-hidden>
-      <Box className="app-glass" p="md">
+      <Box className="app-auth-card" p="md">
         <Group justify="space-between" wrap="nowrap" mb={10}>
-          <Group gap={8} wrap="nowrap">
+          <Group gap={8} wrap="nowrap" className="app-auth-muted">
             <IconCalendarClock size={16} />
-            <Text size="xs" fw={600} opacity={0.85}>
+            <Text size="xs" fw={600}>
               Next up · tomorrow 05:30
             </Text>
           </Group>
-          <Text size="xs" fw={600} className="app-glass-pill">
+          <Text size="xs" fw={600} className="app-auth-pill">
             Saves 21% water
           </Text>
         </Group>
-        <Text fw={650} fz="lg" lh={1.25}>
+        <Text fw={600} fz="md" lh={1.25}>
           Irrigate North Pivot for 3 h 10 min
         </Text>
-        <Text size="sm" opacity={0.75} mt={2}>
-          38 mm · soil at 41% of available water · no rain expected
+        <Text size="sm" mt={2} className="app-auth-muted">
+          38 mm · no rain expected in the next 48 hours
         </Text>
-        <Box mt={14} className="app-glass-bar">
-          <Box className="app-glass-bar-fill" w="41%" />
+        <Group justify="space-between" mt={14} mb={6}>
+          <Text size="xs" className="app-auth-muted">
+            Soil moisture
+          </Text>
+          <Text size="xs" fw={600} className="app-num">
+            41%
+          </Text>
+        </Group>
+        <Box className="app-auth-bar">
+          <Box className="app-auth-bar-fill" w="41%" />
         </Box>
       </Box>
       <SimpleGrid cols={2} spacing={12}>
-        <Box className="app-glass" p="md">
-          <Group gap={8} wrap="nowrap">
+        <Box className="app-auth-card" p="md">
+          <Group gap={8} wrap="nowrap" className="app-auth-muted">
             <IconEngine size={16} />
-            <Text size="xs" fw={600} opacity={0.85}>
+            <Text size="xs" fw={600}>
               Borehole pump B2
             </Text>
           </Group>
-          <Text fw={650} fz={22} mt={6} className="app-num">
+          <Text fw={600} fz={22} mt={6} className="app-num">
             72
-            <Text span size="sm" fw={500} opacity={0.7} ml={4}>
+            <Text span size="sm" fw={500} ml={4} className="app-auth-muted">
               health
             </Text>
           </Text>
-          <Text size="xs" opacity={0.75}>
+          <Text size="xs" className="app-auth-muted">
             Service due in 6 days
           </Text>
         </Box>
-        <Box className="app-glass" p="md">
-          <Group gap={8} wrap="nowrap">
-            <IconPlant2 size={16} />
-            <Text size="xs" fw={600} opacity={0.85}>
+        <Box className="app-auth-card" p="md">
+          <Group gap={8} wrap="nowrap" className="app-auth-muted">
+            <IconDroplets size={16} />
+            <Text size="xs" fw={600}>
               This season
             </Text>
           </Group>
-          <Text fw={650} fz={22} mt={6} className="app-num">
+          <Text fw={600} fz={22} mt={6} className="app-num">
             1.8
-            <Text span size="sm" fw={500} opacity={0.7} ml={4}>
+            <Text span size="sm" fw={500} ml={4} className="app-auth-muted">
               ML saved
             </Text>
           </Text>
-          <Text size="xs" opacity={0.75}>
+          <Text size="xs" className="app-auth-muted">
             Against a weekly schedule
           </Text>
         </Box>

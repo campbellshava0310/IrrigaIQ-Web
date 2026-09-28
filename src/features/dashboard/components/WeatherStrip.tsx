@@ -34,7 +34,7 @@ export function WeatherStrip({ days, today, live, layout = 'strip' }: WeatherStr
   return (
     <Stack gap="xs">
       <Group justify="space-between">
-        <Text fw={650} fz="lg">
+        <Text fw={600} fz="md">
           Next 7 days
         </Text>
         <Tooltip
@@ -46,7 +46,7 @@ export function WeatherStrip({ days, today, live, layout = 'strip' }: WeatherStr
           multiline
           w={280}
         >
-          <Badge variant="dot" color={live ? 'teal' : 'gray'} size="sm">
+          <Badge variant="dot" color={live ? 'green' : 'gray'} size="sm">
             {live ? 'Live forecast' : 'Seasonal estimate'}
           </Badge>
         </Tooltip>
@@ -115,7 +115,7 @@ export function WeatherStrip({ days, today, live, layout = 'strip' }: WeatherStr
                   )} mm expected rain, ${formatNumber(day.et0Mm, 1)} mm crop demand`}
                 >
                   <Stack gap={4} align="center">
-                    <Text size="xs" fw={650}>
+                    <Text size="xs" fw={600}>
                       {isToday ? 'Today' : formatWeekday(day.date)}
                     </Text>
                     <Text size="10px" c="dimmed" lh={1}>

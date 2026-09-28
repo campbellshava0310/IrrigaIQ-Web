@@ -3,3 +3,4 @@
 import '@mantine/charts/styles.css';
 
 export { AreaChart, CompositeChart, LineChart } from '@mantine/charts';
+export { ReferenceDot } from 'recharts';

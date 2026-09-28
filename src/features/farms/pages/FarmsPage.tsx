@@ -8,20 +8,13 @@ import {
   Pagination,
   Table,
   Text,
-  TextInput,
 } from '@mantine/core';
 import { useDebouncedValue, useDisclosure } from '@mantine/hooks';
-import {
-  IconDots,
-  IconPencil,
-  IconPlant2,
-  IconPlus,
-  IconSearch,
-  IconTrash,
-} from '@tabler/icons-react';
+import { IconDots, IconPencil, IconPlant2, IconPlus, IconTrash } from '@tabler/icons-react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 
+import { FilterBar } from '@/components/filters/FilterBar';
 import { PageHeader } from '@/components/PageHeader';
 import { EmptyState, ErrorState, LoadingState } from '@/components/QueryStates';
 import { useAuth } from '@/features/auth/useAuth';
@@ -97,21 +90,27 @@ export function FarmsPage() {
       )}
 
       {data && !isEmpty && (
-        <Card withBorder padding={0} style={{ overflow: 'hidden' }}>
-          <Group p="md">
-            <TextInput
-              placeholder="Search by name or location"
-              leftSection={<IconSearch size={16} />}
-              value={search}
-              onChange={(event) => {
-                setSearch(event.currentTarget.value);
-                setPage(1);
-              }}
-              w={{ base: '100%', sm: 320 }}
-            />
-          </Group>
-          <Table.ScrollContainer minWidth={720}>
-            <Table highlightOnHover verticalSpacing="sm">
+        <FilterBar
+          search={{
+            value: search,
+            onChange: (value) => {
+              setSearch(value);
+              setPage(1);
+            },
+            placeholder: 'Search by name or location',
+            label: 'Search farms',
+          }}
+          end={
+            <Text size="sm" c="dimmed" className="app-num">
+              {data.totalElements} {data.totalElements === 1 ? 'farm' : 'farms'}
+            </Text>
+          }
+        />
+      )}
+      {data && !isEmpty && (
+        <Card withBorder padding={0} className="app-table-card">
+          <div className="app-table-scroll">
+            <Table stickyHeader miw={720} highlightOnHover verticalSpacing="sm">
               <Table.Thead>
                 <Table.Tr>
                   <Table.Th>Name</Table.Th>
@@ -120,7 +119,9 @@ export function FarmsPage() {
                   <Table.Th ta="right">Fields</Table.Th>
                   {isAdmin && <Table.Th>Owner</Table.Th>}
                   <Table.Th>Updated</Table.Th>
-                  <Table.Th w={48} />
+                  <Table.Th w={48}>
+                    <span className="app-visually-hidden">Actions</span>
+                  </Table.Th>
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
@@ -197,7 +198,7 @@ export function FarmsPage() {
                 )}
               </Table.Tbody>
             </Table>
-          </Table.ScrollContainer>
+          </div>
           {data.totalPages > 1 && (
             <Group justify="space-between" p="md">
               <Text size="sm" c="dimmed">

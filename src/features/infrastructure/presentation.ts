@@ -28,7 +28,7 @@ import type {
 } from './types';
 
 export const RISK: Record<RiskLevel, { label: string; color: string; description: string }> = {
-  LOW: { label: 'Low risk', color: 'teal', description: 'Healthy; keep to the service plan.' },
+  LOW: { label: 'Low risk', color: 'green', description: 'Healthy; keep to the service plan.' },
   MODERATE: {
     label: 'Moderate risk',
     color: 'yellow',
@@ -47,7 +47,7 @@ export const RISK: Record<RiskLevel, { label: string; color: string; description
 };
 
 export const ASSET_STATUS: Record<AssetStatus, { label: string; color: string }> = {
-  OPERATIONAL: { label: 'Operational', color: 'teal' },
+  OPERATIONAL: { label: 'Operational', color: 'green' },
   DEGRADED: { label: 'Degraded', color: 'yellow' },
   DOWN: { label: 'Down', color: 'red' },
   UNDER_MAINTENANCE: { label: 'Under maintenance', color: 'blue' },
@@ -92,12 +92,12 @@ export const ASSET_TYPE: Record<AssetType, { label: string; icon: Icon }> = {
 
 export const FACTOR_SEVERITY: Record<FactorSeverity, { label: string; color: string }> = {
   CRITICAL: { label: 'Critical', color: 'red' },
-  WARNING: { label: 'Warning', color: 'orange' },
+  WARNING: { label: 'Warning', color: 'yellow' },
   INFO: { label: 'Note', color: 'blue' },
 };
 
 export const CONDITION: Record<OverallCondition, { label: string; color: string }> = {
-  GOOD: { label: 'Good', color: 'teal' },
+  GOOD: { label: 'Good', color: 'green' },
   FAIR: { label: 'Fair', color: 'yellow' },
   POOR: { label: 'Poor', color: 'red' },
 };
@@ -110,7 +110,7 @@ export const VIBRATION: Record<VibrationLevel, { label: string; hint: string }> 
 
 /** Health score colour: same thresholds as the backend's risk bands. */
 export function scoreColor(score: number): string {
-  if (score >= 80) return 'teal';
+  if (score >= 80) return 'green';
   if (score >= 60) return 'yellow';
   if (score >= 40) return 'orange';
   return 'red';

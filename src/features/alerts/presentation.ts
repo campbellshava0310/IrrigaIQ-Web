@@ -12,14 +12,14 @@ export const SEVERITY: Record<
   { label: string; color: string; icon: Icon; rank: number }
 > = {
   CRITICAL: { label: 'Critical', color: 'red', icon: IconAlertOctagon, rank: 0 },
-  WARNING: { label: 'Warning', color: 'orange', icon: IconAlertTriangle, rank: 1 },
+  WARNING: { label: 'Warning', color: 'yellow', icon: IconAlertTriangle, rank: 1 },
   INFO: { label: 'Info', color: 'blue', icon: IconInfoCircle, rank: 2 },
 };
 
 export const STATE: Record<AlertState, { label: string; color: string }> = {
-  OPEN: { label: 'Open', color: 'red' },
-  ACKNOWLEDGED: { label: 'Acknowledged', color: 'yellow' },
-  RESOLVED: { label: 'Resolved', color: 'teal' },
+  OPEN: { label: 'Open', color: 'gray' },
+  ACKNOWLEDGED: { label: 'Acknowledged', color: 'blue' },
+  RESOLVED: { label: 'Resolved', color: 'green' },
 };
 
 export const ALERT_TYPE: Record<AlertType, string> = {

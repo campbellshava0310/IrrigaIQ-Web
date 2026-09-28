@@ -164,7 +164,7 @@ function CheckForm({
                     ? 'red'
                     : drift != null && drift >= 10
                       ? 'orange'
-                      : 'teal'
+                      : 'green'
                 }
                 icon={<IconBolt size={18} />}
               >

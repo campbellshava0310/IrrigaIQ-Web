@@ -1,5 +1,6 @@
-import { AreaChart, CompositeChart } from '@/lib/charts';
-import { Card, Group, SegmentedControl, Stack, Table, Text } from '@mantine/core';
+import { chartTooltip } from '@/components/charts/chartTooltip';
+import { AreaChart, CompositeChart, ReferenceDot } from '@/lib/charts';
+import { Box, Card, Group, SegmentedControl, Stack, Table, Text } from '@mantine/core';
 import { useState, type ReactNode } from 'react';
 
 import { formatDayMonth, formatNumber } from '@/lib/format';
@@ -39,6 +40,7 @@ export function WaterBalanceCharts({
     etc: round(day.etcMm),
   }));
   const todayLabel = data.find((row) => row.date === today)?.label;
+  const irrigationDays = data.filter((row) => row.irrigation > 0);
   const lastLabel = data.at(-1)?.label;
   const forecastArea =
     todayLabel && lastLabel && todayLabel !== lastLabel
@@ -83,7 +85,7 @@ export function WaterBalanceCharts({
       {view === 'chart' ? (
         <>
           <Card withBorder padding="md">
-            <Text fw={600} size="sm">
+            <Text fw={600} fz="md">
               Soil water in the root zone
             </Text>
             <Text size="xs" c="dimmed" mb="sm">
@@ -95,7 +97,7 @@ export function WaterBalanceCharts({
               data={data}
               dataKey="label"
               series={[
-                { name: 'water', label: 'Soil water', color: 'var(--viz-series-1)' },
+                { name: 'water', label: 'Soil water', color: 'var(--viz-soil)' },
                 { name: 'refill', label: 'Refill point', color: 'var(--viz-reference)' },
               ]}
               curveType="linear"
@@ -118,11 +120,57 @@ export function WaterBalanceCharts({
               referenceAreas={forecastArea}
               referenceLines={todayLine}
               xAxisProps={{ minTickGap: 24 }}
-            />
+              tooltipProps={chartTooltip({
+                series: { water: 'Soil water', refill: 'Refill point' },
+                format: (value) => `${formatNumber(value)}%`,
+                footer: (row) => (
+                  <Stack gap={2}>
+                    {Number(row.irrigation) > 0 && (
+                      <Text size="xs" c="teal">
+                        Irrigated {formatNumber(Number(row.irrigation), 1)} mm
+                        {String(row.date) > today ? ' (planned)' : ''}
+                      </Text>
+                    )}
+                    {Number(row.water) < Number(row.refill) && (
+                      <Text size="xs" c="red">
+                        Below the refill point: the crop is stressed
+                      </Text>
+                    )}
+                    {String(row.date) > today && (
+                      <Text size="xs" c="dimmed">
+                        Forecast
+                      </Text>
+                    )}
+                  </Stack>
+                ),
+              })}
+            >
+              {irrigationDays.map((row) => (
+                <ReferenceDot
+                  key={row.date}
+                  x={row.label}
+                  y={row.water}
+                  r={4}
+                  fill={row.date > today ? 'var(--app-surface)' : 'var(--viz-water)'}
+                  stroke={row.date > today ? 'var(--viz-water)' : 'var(--app-surface)'}
+                  strokeWidth={2}
+                  ifOverflow="extendDomain"
+                />
+              ))}
+            </AreaChart>
+            <Group gap={6} mt={4} c="dimmed">
+              <Box
+                w={8}
+                h={8}
+                style={{ borderRadius: 8, background: 'var(--viz-water)' }}
+                aria-hidden
+              />
+              <Text size="xs">Irrigation run (hollow when planned)</Text>
+            </Group>
           </Card>
 
           <Card withBorder padding="md">
-            <Text fw={600} size="sm">
+            <Text fw={600} fz="md">
               Daily water in and crop water use (mm)
             </Text>
             <Text size="xs" c="dimmed" mb="sm">
@@ -137,14 +185,14 @@ export function WaterBalanceCharts({
                 {
                   name: 'irrigation',
                   label: 'Irrigation',
-                  color: 'var(--viz-series-1)',
+                  color: 'var(--viz-water)',
                   type: 'bar',
                 },
-                { name: 'rain', label: 'Rain', color: 'var(--viz-series-2)', type: 'bar' },
+                { name: 'rain', label: 'Rain', color: 'var(--viz-rain)', type: 'bar' },
                 {
                   name: 'etc',
                   label: 'Crop water use',
-                  color: 'var(--viz-series-3)',
+                  color: 'var(--viz-soil)',
                   type: 'line',
                 },
               ]}
@@ -162,12 +210,31 @@ export function WaterBalanceCharts({
               referenceAreas={forecastArea}
               referenceLines={todayLine}
               xAxisProps={{ minTickGap: 24 }}
+              tooltipProps={chartTooltip({
+                series: { irrigation: 'Irrigation', rain: 'Rain', etc: 'Crop water use' },
+                format: (value) => `${formatNumber(value, 1)} mm`,
+                cursor: 'band',
+                footer: (row) => {
+                  const net = Number(row.irrigation) + Number(row.rain) - Number(row.etc);
+                  return (
+                    <Text size="xs" c="dimmed" className="app-num">
+                      Net {net >= 0 ? '+' : '−'}
+                      {formatNumber(Math.abs(net), 1)} mm to the root zone
+                      {String(row.date) > today ? ' (forecast)' : ''}
+                    </Text>
+                  );
+                },
+              })}
             />
           </Card>
         </>
       ) : (
-        <Card withBorder padding={0} style={{ overflow: 'hidden' }}>
-          <Table.ScrollContainer minWidth={640} maxHeight={520}>
+        <Card withBorder padding={0} className="app-table-card">
+          <Table.ScrollContainer
+            minWidth={640}
+            maxHeight={520}
+            scrollAreaProps={{ viewportProps: { tabIndex: 0, 'aria-label': 'Scrollable table' } }}
+          >
             <Table
               stickyHeader
               striped

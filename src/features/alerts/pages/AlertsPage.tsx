@@ -1,15 +1,4 @@
-import {
-  Anchor,
-  Badge,
-  Button,
-  Card,
-  Group,
-  SegmentedControl,
-  Stack,
-  Text,
-  ThemeIcon,
-  Tooltip,
-} from '@mantine/core';
+import { Anchor, Badge, Button, Card, Group, Stack, Text, ThemeIcon, Tooltip } from '@mantine/core';
 import {
   IconBellCheck,
   IconCalendarPlus,
@@ -21,6 +10,9 @@ import {
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 
+import { FilterBar, FilterMenu } from '@/components/filters/FilterBar';
+import { sameFilters, type SavedView } from '@/components/filters/savedViews';
+import { SavedViewsMenu } from '@/components/filters/SavedViewsMenu';
 import { PageHeader } from '@/components/PageHeader';
 import { EmptyState, ErrorState, LoadingState } from '@/components/QueryStates';
 import { RequireFarm } from '@/features/farms/components/RequireFarm';
@@ -41,27 +33,50 @@ const IRRIGATION_TYPES: AlertType[] = [
   'WATER_ANOMALY',
 ];
 
-type Area = 'ALL' | 'IRRIGATION' | 'INFRASTRUCTURE';
+type Area = 'IRRIGATION' | 'INFRASTRUCTURE';
+
+interface AlertFilters {
+  status: 'active' | 'resolved';
+  area: Area | null;
+  severity: AlertSeverity | null;
+}
+
+const DEFAULT_FILTERS: AlertFilters = { status: 'active', area: null, severity: null };
+
+const PRESETS: SavedView<AlertFilters>[] = [
+  { id: 'needs-action', name: 'Needs action', filters: DEFAULT_FILTERS },
+  {
+    id: 'critical',
+    name: 'Critical only',
+    filters: { status: 'active', area: null, severity: 'CRITICAL' },
+  },
+  {
+    id: 'equipment',
+    name: 'Equipment',
+    filters: { status: 'active', area: 'INFRASTRUCTURE', severity: null },
+  },
+  { id: 'resolved', name: 'Resolved', filters: { status: 'resolved', area: null, severity: null } },
+];
 
 export function AlertsPage() {
   return <RequireFarm>{(farm) => <AlertsInbox farm={farm} />}</RequireFarm>;
 }
 
 function AlertsInbox({ farm }: { farm: Farm }) {
-  const [history, setHistory] = useState(false);
+  const [filters, setFilters] = useState<AlertFilters>(DEFAULT_FILTERS);
+  const { area, severity } = filters;
+  const history = filters.status === 'resolved';
   const alerts = useAlerts(farm.id, history);
   const evaluate = useEvaluateAlerts(farm.id);
-  const [severity, setSeverity] = useState<'ALL' | AlertSeverity>('ALL');
-  const [area, setArea] = useState<Area>('ALL');
 
   const list = useMemo(() => alerts.data ?? [], [alerts.data]);
   const visible = useMemo(
     () =>
       list
         .filter((alert) => (history ? alert.state === 'RESOLVED' : alert.state !== 'RESOLVED'))
-        .filter((alert) => severity === 'ALL' || alert.severity === severity)
+        .filter((alert) => severity == null || alert.severity === severity)
         .filter((alert) =>
-          area === 'ALL'
+          area == null
             ? true
             : area === 'IRRIGATION'
               ? IRRIGATION_TYPES.includes(alert.type)
@@ -82,7 +97,8 @@ function AlertsInbox({ farm }: { farm: Farm }) {
     <>
       <PageHeader
         title="Alerts"
-        description="Raised automatically when a field needs water, rain is coming, or infrastructure shows signs of failure, and cleared when the condition goes away. Checked every 15 minutes and after every change."
+        description="Raised and cleared automatically as conditions change."
+        help="Alerts fire when a field needs water, heavy rain is coming or equipment shows signs of failure, and clear when the condition goes away. Checked every 15 minutes and after every change."
         actions={
           <Button
             variant="default"
@@ -100,46 +116,62 @@ function AlertsInbox({ farm }: { farm: Farm }) {
         }
       />
 
-      <Group justify="space-between" mb="md" gap="sm">
-        <Group gap="sm">
-          <SegmentedControl
-            value={history ? 'history' : 'active'}
-            onChange={(value) => setHistory(value === 'history')}
-            data={[
-              { value: 'active', label: `Active (${active.length})` },
-              { value: 'history', label: 'Resolved' },
-            ]}
-          />
-          <SegmentedControl
-            value={area}
-            onChange={(value) => setArea(value as Area)}
-            data={[
-              { value: 'ALL', label: 'All areas' },
-              { value: 'IRRIGATION', label: 'Irrigation' },
-              { value: 'INFRASTRUCTURE', label: 'Infrastructure' },
-            ]}
-          />
-        </Group>
+      <FilterBar
+        onReset={
+          sameFilters(filters, DEFAULT_FILTERS) ? undefined : () => setFilters(DEFAULT_FILTERS)
+        }
+        end={
+          <Text size="sm" c="dimmed" className="app-num">
+            {visible.length} {visible.length === 1 ? 'alert' : 'alerts'}
+          </Text>
+        }
+      >
+        <FilterMenu
+          label="Status"
+          value={filters.status}
+          options={[
+            { value: 'active', label: `Active (${active.length})` },
+            { value: 'resolved', label: 'Resolved' },
+          ]}
+          onChange={(status) => status && setFilters({ ...filters, status, severity: null })}
+        />
+        <FilterMenu
+          label="Area"
+          allLabel="All"
+          value={area}
+          options={[
+            { value: 'IRRIGATION', label: 'Irrigation' },
+            { value: 'INFRASTRUCTURE', label: 'Infrastructure' },
+          ]}
+          onChange={(value) => setFilters({ ...filters, area: value })}
+        />
         {!history && (
-          <SegmentedControl
+          <FilterMenu
+            label="Severity"
+            allLabel="All"
             value={severity}
-            onChange={(value) => setSeverity(value as 'ALL' | AlertSeverity)}
-            data={[
-              { value: 'ALL', label: 'All' },
+            options={[
               { value: 'CRITICAL', label: `Critical (${count('CRITICAL')})` },
               { value: 'WARNING', label: `Warning (${count('WARNING')})` },
               { value: 'INFO', label: `Info (${count('INFO')})` },
             ]}
+            onChange={(value) => setFilters({ ...filters, severity: value })}
           />
         )}
-      </Group>
+        <SavedViewsMenu
+          storageKey="alerts"
+          presets={PRESETS}
+          current={filters}
+          onApply={setFilters}
+        />
+      </FilterBar>
 
       {alerts.isPending && <LoadingState label="Loading alerts…" />}
       {alerts.isError && <ErrorState error={alerts.error} onRetry={() => alerts.refetch()} />}
       {alerts.data && visible.length === 0 && (
         <EmptyState
           icon={<IconBellCheck size={24} />}
-          color={history ? 'brand' : 'teal'}
+          color={history ? 'brand' : 'green'}
           title={history ? 'No resolved alerts yet' : 'All clear'}
           description={
             history
@@ -185,8 +217,10 @@ function AlertCard({ alert, farmId }: { alert: Alert; farmId: string }) {
           <severity.icon size={20} />
         </ThemeIcon>
         <Stack gap={4} style={{ flex: 1 }} miw={0}>
-          <Group justify="space-between" wrap="nowrap" align="flex-start" gap="xs">
-            <Text fw={650}>{alert.title}</Text>
+          <Group justify="space-between" wrap="wrap" align="flex-start" gap="xs">
+            <Text fw={600} style={{ flex: '1 1 260px' }}>
+              {alert.title}
+            </Text>
             <Group gap={6} wrap="nowrap">
               <Badge variant="light" color={resolved ? 'gray' : severity.color} size="sm">
                 {severity.label}

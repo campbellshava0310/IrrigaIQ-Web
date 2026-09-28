@@ -6,11 +6,9 @@ import {
   Group,
   Menu,
   Pagination,
-  Select,
   Stack,
   Table,
   Text,
-  TextInput,
 } from '@mantine/core';
 import { useDebouncedValue, useDisclosure } from '@mantine/hooks';
 import {
@@ -19,12 +17,12 @@ import {
   IconLogout,
   IconPencil,
   IconPlus,
-  IconSearch,
   IconUserOff,
   IconUserCheck,
 } from '@tabler/icons-react';
 import { useState } from 'react';
 
+import { FilterBar, FilterMenu } from '@/components/filters/FilterBar';
 import { PageHeader } from '@/components/PageHeader';
 import { ErrorState, LoadingState } from '@/components/QueryStates';
 import { useAuth } from '@/features/auth/useAuth';
@@ -52,13 +50,13 @@ function StatusBadge({ user }: { user: AdminUser }) {
   }
   if (user.locked) {
     return (
-      <Badge color="orange" variant="dot">
+      <Badge color="yellow" variant="dot">
         Locked
       </Badge>
     );
   }
   return (
-    <Badge color="teal" variant="dot">
+    <Badge color="green" variant="dot">
       Active
     </Badge>
   );
@@ -69,7 +67,7 @@ export function AdminUsersPage() {
   const [search, setSearch] = useState('');
   const [query] = useDebouncedValue(search.trim(), 300);
   const [role, setRole] = useState<Role | null>(null);
-  const [status, setStatus] = useState<string | null>(null);
+  const [status, setStatus] = useState<'enabled' | 'disabled' | null>(null);
   const [page, setPage] = useState(1);
   const users = useAdminUsers({
     q: query,
@@ -141,50 +139,65 @@ export function AdminUsersPage() {
           </Button>
         }
       />
-      <Card withBorder padding={0} style={{ overflow: 'hidden' }}>
-        <Group p="md" gap="sm">
-          <TextInput
-            placeholder="Search name or email"
-            leftSection={<IconSearch size={16} />}
-            value={search}
-            onChange={(event) => {
-              setSearch(event.currentTarget.value);
-              setPage(1);
-            }}
-            w={{ base: '100%', sm: 280 }}
-          />
-          <Select
-            placeholder="All roles"
-            data={ROLES.map(({ value, label }) => ({ value, label }))}
-            value={role}
-            onChange={(value) => {
-              setRole(value as Role | null);
-              setPage(1);
-            }}
-            clearable
-            w={180}
-          />
-          <Select
-            placeholder="Any status"
-            data={[
-              { value: 'enabled', label: 'Enabled' },
-              { value: 'disabled', label: 'Disabled' },
-            ]}
-            value={status}
-            onChange={(value) => {
-              setStatus(value);
-              setPage(1);
-            }}
-            clearable
-            w={160}
-          />
-        </Group>
+      <FilterBar
+        search={{
+          value: search,
+          onChange: (value) => {
+            setSearch(value);
+            setPage(1);
+          },
+          placeholder: 'Search name or email',
+          label: 'Search users',
+        }}
+        onReset={
+          search === '' && role == null && status == null
+            ? undefined
+            : () => {
+                setSearch('');
+                setRole(null);
+                setStatus(null);
+                setPage(1);
+              }
+        }
+        end={
+          users.data && (
+            <Text size="sm" c="dimmed" className="app-num">
+              {users.data.totalElements} {users.data.totalElements === 1 ? 'user' : 'users'}
+            </Text>
+          )
+        }
+      >
+        <FilterMenu
+          label="Role"
+          allLabel="All"
+          value={role}
+          options={ROLES.map(({ value, label }) => ({ value, label }))}
+          onChange={(value) => {
+            setRole(value);
+            setPage(1);
+          }}
+        />
+        <FilterMenu
+          label="Status"
+          allLabel="Any"
+          value={status}
+          options={[
+            { value: 'enabled', label: 'Enabled' },
+            { value: 'disabled', label: 'Disabled' },
+          ]}
+          onChange={(value) => {
+            setStatus(value);
+            setPage(1);
+          }}
+        />
+      </FilterBar>
+      <Card withBorder padding={0} className="app-table-card">
         {users.isPending && <LoadingState label="Loading users…" />}
         {users.isError && <ErrorState error={users.error} onRetry={() => users.refetch()} />}
         {users.data && (
           <>
-            <Table.ScrollContainer minWidth={760}>
-              <Table verticalSpacing="sm" highlightOnHover>
+            <div className="app-table-scroll">
+              <Table stickyHeader miw={760} verticalSpacing="sm" highlightOnHover>
                 <Table.Thead>
                   <Table.Tr>
                     <Table.Th>User</Table.Th>
@@ -192,7 +205,9 @@ export function AdminUsersPage() {
                     <Table.Th miw={100}>Status</Table.Th>
                     <Table.Th>Last sign-in</Table.Th>
                     <Table.Th>Created</Table.Th>
-                    <Table.Th w={48} />
+                    <Table.Th w={48}>
+                      <span className="app-visually-hidden">Actions</span>
+                    </Table.Th>
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
@@ -294,7 +309,7 @@ export function AdminUsersPage() {
                   )}
                 </Table.Tbody>
               </Table>
-            </Table.ScrollContainer>
+            </div>
             <Group justify="space-between" p="md">
               <Text size="sm" c="dimmed">
                 {users.data.totalElements} users

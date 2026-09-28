@@ -5,8 +5,6 @@ import {
   Group,
   Pagination,
   Popover,
-  SegmentedControl,
-  Select,
   Table,
   Text,
   Tooltip,
@@ -14,6 +12,7 @@ import {
 } from '@mantine/core';
 import { useState } from 'react';
 
+import { FilterBar, FilterMenu } from '@/components/filters/FilterBar';
 import { PageHeader } from '@/components/PageHeader';
 import { ErrorState, LoadingState } from '@/components/QueryStates';
 import { formatDateTime, formatRelative, humanize } from '@/lib/format';
@@ -73,39 +72,48 @@ export function AdminAuditPage() {
         title="Audit log"
         description="Append-only record of security-relevant activity. Newest first."
       />
-      <Card withBorder padding={0} style={{ overflow: 'hidden' }}>
-        <Group p="md" gap="sm">
-          <Select
-            placeholder="All actions"
-            data={AUDIT_ACTIONS.map((value) => ({ value, label: humanize(value) }))}
-            value={action}
-            onChange={(value) => {
-              setAction(value as AuditAction | null);
-              setPage(1);
-            }}
-            clearable
-            searchable
-            w={240}
-          />
-          <SegmentedControl
-            value={outcome}
-            onChange={(value) => {
-              setOutcome(value as OutcomeFilter);
-              setPage(1);
-            }}
-            data={[
-              { value: 'ALL', label: 'All' },
-              { value: 'SUCCESS', label: 'Success' },
-              { value: 'FAILURE', label: 'Failure' },
-            ]}
-          />
-        </Group>
+      <FilterBar
+        onReset={
+          action == null && outcome === 'ALL'
+            ? undefined
+            : () => {
+                setAction(null);
+                setOutcome('ALL');
+                setPage(1);
+              }
+        }
+      >
+        <FilterMenu
+          label="Action"
+          allLabel="All"
+          value={action}
+          options={AUDIT_ACTIONS.map((value) => ({ value, label: humanize(value) }))}
+          onChange={(value) => {
+            setAction(value);
+            setPage(1);
+          }}
+        />
+        <FilterMenu
+          label="Outcome"
+          allLabel="All"
+          value={outcome === 'ALL' ? null : outcome}
+          options={[
+            { value: 'SUCCESS', label: 'Success' },
+            { value: 'FAILURE', label: 'Failure' },
+          ]}
+          onChange={(value) => {
+            setOutcome(value ?? 'ALL');
+            setPage(1);
+          }}
+        />
+      </FilterBar>
+      <Card withBorder padding={0} className="app-table-card">
         {events.isPending && <LoadingState label="Loading audit events…" />}
         {events.isError && <ErrorState error={events.error} onRetry={() => events.refetch()} />}
         {events.data && (
           <>
-            <Table.ScrollContainer minWidth={900}>
-              <Table verticalSpacing="xs" striped>
+            <div className="app-table-scroll">
+              <Table stickyHeader miw={900} verticalSpacing="xs" striped>
                 <Table.Thead>
                   <Table.Tr>
                     <Table.Th>When</Table.Th>
@@ -134,7 +142,7 @@ export function AdminAuditPage() {
                         <Badge
                           size="sm"
                           variant="dot"
-                          color={event.outcome === 'SUCCESS' ? 'teal' : 'red'}
+                          color={event.outcome === 'SUCCESS' ? 'green' : 'red'}
                         >
                           {humanize(event.outcome)}
                         </Badge>
@@ -172,7 +180,7 @@ export function AdminAuditPage() {
                   )}
                 </Table.Tbody>
               </Table>
-            </Table.ScrollContainer>
+            </div>
             <Group justify="space-between" p="md">
               <Text size="sm" c="dimmed">
                 {events.data.totalElements} events

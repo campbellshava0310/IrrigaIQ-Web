@@ -3,7 +3,7 @@ import { notifications } from '@mantine/notifications';
 import { toApiError } from '@/lib/api/errors';
 
 export function notifySuccess(message: string, title?: string) {
-  notifications.show({ color: 'teal', title, message });
+  notifications.show({ color: 'green', title, message });
 }
 
 export function notifyError(error: unknown, title = 'Something went wrong') {

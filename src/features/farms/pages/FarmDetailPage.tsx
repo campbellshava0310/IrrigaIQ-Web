@@ -1,6 +1,7 @@
 import {
   ActionIcon,
   Anchor,
+  Box,
   Button,
   Card,
   Group,
@@ -11,22 +12,13 @@ import {
   Title,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import {
-  IconDots,
-  IconGrid4x4,
-  IconPencil,
-  IconPlus,
-  IconRuler2,
-  IconTrash,
-  IconUser,
-  IconCalendar,
-} from '@tabler/icons-react';
+import { IconDots, IconGrid4x4, IconPencil, IconPlus, IconTrash } from '@tabler/icons-react';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 
 import { PageHeader } from '@/components/PageHeader';
 import { EmptyState, ErrorState, LoadingState } from '@/components/QueryStates';
-import { StatCard } from '@/components/StatCard';
+import { Metric, MetricStrip } from '@/components/MetricStrip';
 import { useAuth } from '@/features/auth/useAuth';
 import { confirmDestructive } from '@/lib/confirm';
 import { formatDate, formatHectares, formatMoney, formatNumber, humanize } from '@/lib/format';
@@ -115,33 +107,19 @@ export function FarmDetailPage() {
         }
       />
 
-      <SimpleGrid cols={{ base: 1, xs: 2, lg: 4 }} mb="xl">
-        <StatCard
-          label="Total area"
-          value={formatHectares(current.areaHa)}
-          icon={<IconRuler2 size={20} />}
-        />
-        <StatCard label="Fields" value={current.fieldCount} icon={<IconGrid4x4 size={20} />} />
-        <StatCard
-          label="Owner"
-          value={
-            <Text fz="lg" fw={600}>
-              {current.owner.fullName}
-            </Text>
-          }
-          icon={<IconUser size={20} />}
-          hint={isAdmin ? current.owner.email : undefined}
-        />
-        <StatCard
-          label="Created"
-          value={
-            <Text fz="lg" fw={600}>
-              {formatDate(current.createdAt.slice(0, 10))}
-            </Text>
-          }
-          icon={<IconCalendar size={20} />}
-        />
-      </SimpleGrid>
+      <Box mb="xl">
+        <MetricStrip label="Farm at a glance">
+          <Metric label="Total area" value={formatHectares(current.areaHa)} />
+          <Metric label="Fields" value={current.fieldCount} />
+          <Metric
+            label="Owner"
+            value={current.owner.fullName}
+            hint={isAdmin ? current.owner.email : undefined}
+            compact
+          />
+          <Metric label="Created" value={formatDate(current.createdAt.slice(0, 10))} compact />
+        </MetricStrip>
+      </Box>
 
       <Card withBorder mb="xl">
         <Group justify="space-between" mb="xs">
@@ -181,9 +159,7 @@ export function FarmDetailPage() {
       </Card>
 
       <Group justify="space-between" mb="sm">
-        <Title order={3} fz="lg">
-          Fields
-        </Title>
+        <Title order={2}>Fields</Title>
         <Button size="sm" leftSection={<IconPlus size={16} />} onClick={() => openFieldForm()}>
           Add field
         </Button>
@@ -204,9 +180,9 @@ export function FarmDetailPage() {
         />
       )}
       {fields.data && fields.data.length > 0 && (
-        <Card withBorder padding={0} style={{ overflow: 'hidden' }}>
-          <Table.ScrollContainer minWidth={640}>
-            <Table highlightOnHover verticalSpacing="sm">
+        <Card withBorder padding={0} className="app-table-card">
+          <div className="app-table-scroll">
+            <Table stickyHeader miw={640} highlightOnHover verticalSpacing="sm">
               <Table.Thead>
                 <Table.Tr>
                   <Table.Th>Field</Table.Th>
@@ -214,7 +190,9 @@ export function FarmDetailPage() {
                   <Table.Th>Soil</Table.Th>
                   <Table.Th>Irrigation</Table.Th>
                   <Table.Th>Coordinates</Table.Th>
-                  <Table.Th w={48} />
+                  <Table.Th w={48}>
+                    <span className="app-visually-hidden">Actions</span>
+                  </Table.Th>
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
@@ -271,7 +249,7 @@ export function FarmDetailPage() {
                 ))}
               </Table.Tbody>
             </Table>
-          </Table.ScrollContainer>
+          </div>
         </Card>
       )}
 

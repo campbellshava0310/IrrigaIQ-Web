@@ -264,7 +264,7 @@ export function AssetDetailPage() {
               <Group key={factor.code} wrap="nowrap" align="flex-start" gap="sm">
                 <Badge
                   variant="light"
-                  color={factor.impact < 0 ? FACTOR_SEVERITY[factor.severity].color : 'teal'}
+                  color={factor.impact < 0 ? FACTOR_SEVERITY[factor.severity].color : 'green'}
                   w={52}
                   style={{ flexShrink: 0 }}
                 >
@@ -295,7 +295,7 @@ export function AssetDetailPage() {
 
       <SimpleGrid cols={{ base: 1, xl: 2 }} spacing="lg" mb="lg">
         <ChecksCard checks={checks.data ?? []} loading={checks.isPending} onAdd={check.open} />
-        <Card withBorder padding={0} style={{ overflow: 'hidden' }}>
+        <Card withBorder padding={0} className="app-table-card">
           <Group justify="space-between" p="md" pb="xs">
             <Text fw={600}>Work orders</Text>
             <Anchor component={Link} to="/maintenance" size="sm">
@@ -348,7 +348,7 @@ export function AssetDetailPage() {
 
       {(parent || children.length > 0) && (
         <Card withBorder>
-          <Title order={3} fz="md" mb="sm">
+          <Title order={2} mb="sm">
             Water network
           </Title>
           <Stack gap="xs">
@@ -426,7 +426,7 @@ function ServiceCard({
       </Card>
     );
   }
-  const color = service.overdue ? 'red' : service.progressPct >= 85 ? 'orange' : 'teal';
+  const color = service.overdue ? 'red' : service.progressPct >= 85 ? 'orange' : 'green';
   return (
     <Card withBorder h="100%">
       <Group justify="space-between">
@@ -437,7 +437,7 @@ function ServiceCard({
       </Group>
       <Text
         fz={26}
-        fw={650}
+        fw={600}
         lts={-0.5}
         mt="xs"
         c={service.overdue ? 'red' : undefined}
@@ -563,7 +563,7 @@ function ChecksCard({
   onAdd: () => void;
 }) {
   return (
-    <Card withBorder padding={0} style={{ overflow: 'hidden' }}>
+    <Card withBorder padding={0} className="app-table-card">
       <Group justify="space-between" p="md" pb="xs">
         <Text fw={600}>Condition checks</Text>
         <Button
@@ -583,7 +583,11 @@ function ChecksCard({
         </Text>
       )}
       {checks.length > 0 && (
-        <Table.ScrollContainer minWidth={480} maxHeight={360}>
+        <Table.ScrollContainer
+          minWidth={480}
+          maxHeight={360}
+          scrollAreaProps={{ viewportProps: { tabIndex: 0, 'aria-label': 'Scrollable table' } }}
+        >
           <Table verticalSpacing="sm" stickyHeader>
             <Table.Thead>
               <Table.Tr>

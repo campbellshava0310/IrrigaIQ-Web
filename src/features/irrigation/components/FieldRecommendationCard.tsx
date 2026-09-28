@@ -109,7 +109,7 @@ export function FieldRecommendationCard({
             <Anchor
               component={Link}
               to={`/farms/${farmId}/fields/${field.fieldId}`}
-              fw={650}
+              fw={600}
               fz="md"
               c="var(--mantine-color-text)"
               truncate
@@ -186,7 +186,7 @@ export function FieldRecommendationCard({
               <ThemeIcon color={decision.color} variant="light" size={28} radius="sm">
                 <decision.icon size={16} />
               </ThemeIcon>
-              <Text fw={650}>{decisionHeadline(rec)}</Text>
+              <Text fw={600}>{decisionHeadline(rec)}</Text>
             </Group>
 
             {!planted && (
@@ -357,7 +357,7 @@ function Metric({ label, value }: { label: string; value: string }) {
       <Text size="xs" c="dimmed">
         {label}
       </Text>
-      <Text fw={650} fz="lg" lh={1.2} className="app-num">
+      <Text fw={600} fz="md" lh={1.2} className="app-num">
         {value}
       </Text>
     </Stack>

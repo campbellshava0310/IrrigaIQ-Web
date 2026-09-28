@@ -19,12 +19,23 @@ Mantine **9** (`c=` not `color=` on Text, `schemaResolver` from `@mantine/form` 
   `vendor-mantine` group must stay before `vendor-charts` (groups pull in dependencies).
 - Chart colours come from `src/styles/viz.css` tokens; one measure per axis, table view per chart.
 - Visual system: theme in `src/app/theme.ts`, surfaces in `src/styles/app.css` (see README,
-  "Design system"). Use `PageHeader`, `StatCard`, `Card withBorder`, `Badge variant="dot"` for
-  status, `LoadingState layout="page"` for first loads. `brand` = IrrigaIQ teal (primary),
-  `teal` = success green. No coloured border strips, no `tt="uppercase"` labels, no nested
-  bordered cards (use `.app-row` / `.app-tile`).
+  "Design system"). Use `PageHeader` (one-line description, `help` for the rest),
+  `MetricStrip`/`Metric` with `Delta` and `TrendLine` for headline numbers (no icon tiles),
+  `FilterBar`/`FilterMenu`/`SavedViewsMenu` for list filters, `useSort`/`SortTh` and
+  `.app-table-scroll` + `stickyHeader` for tables, `chartTooltip()` for chart tooltips,
+  `Card withBorder`, `Badge variant="dot"` for status, `LoadingState layout="page"` for first
+  loads. Card titles are `h2` (16 px); only weights 400/500/600. Colours are semantic: `brand` = deep
+  forest (primary, crop/soil), `teal` = water, `blue` = AI/info/rain, `green` = healthy,
+  `yellow` = warning, `orange` = serious, `red` = critical; never `violet`. Flat colour only (no
+  gradients), no coloured border strips, no `tt="uppercase"` labels, no nested bordered cards
+  (use `.app-row` / `.app-tile`); AI content goes in `.app-ai`.
 - Mantine renders the default Button variant without `data-variant`; CSS aimed at filled buttons
   must also match `:not([data-variant])`.
+- Command palette and shortcuts live in `src/app/command`. A palette action that opens a dialog
+  navigates to `?do=<command>`; the page reads it with `usePageCommand()` and derives the
+  dialog's open state from it.
+- Mutations that change a list the user is looking at update the cache optimistically
+  (`onMutate` snapshot, `onError` rollback, `onSettled` invalidate the farm scope).
 
 Verify with `npm run lint && npm run typecheck && npm test && npm run build` (and
 `npm run format:check`).

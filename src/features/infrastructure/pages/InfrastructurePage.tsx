@@ -1,44 +1,75 @@
 import {
+  ActionIcon,
   Badge,
   Box,
   Button,
   Card,
   Group,
   SegmentedControl,
-  Select,
   SimpleGrid,
   Stack,
   Table,
   Text,
-  TextInput,
   ThemeIcon,
+  Tooltip,
   UnstyledButton,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
-  IconAlertTriangle,
-  IconCalendarDue,
+  IconClipboardCheck,
   IconEngine,
-  IconPlugConnectedX,
   IconPlus,
   IconSearch,
+  IconTool,
 } from '@tabler/icons-react';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 
+import { usePageCommand } from '@/app/command/usePageCommand';
+import { FilterBar, FilterMenu } from '@/components/filters/FilterBar';
+import { sameFilters, type SavedView } from '@/components/filters/savedViews';
+import { SavedViewsMenu } from '@/components/filters/SavedViewsMenu';
 import { PageHeader } from '@/components/PageHeader';
+import { SortTh } from '@/components/table/SortTh';
+import { useSort } from '@/components/table/useSort';
 import { EmptyState, ErrorState, LoadingState } from '@/components/QueryStates';
-import { StatCard } from '@/components/StatCard';
+import { Metric, MetricStrip } from '@/components/MetricStrip';
 import { RequireFarm } from '@/features/farms/components/RequireFarm';
 import type { Farm } from '@/features/farms/types';
+import { WorkOrderFormModal } from '@/features/maintenance/components/WorkOrderFormModal';
 import { daysFromToday, formatDate, formatDueIn } from '@/lib/format';
 
 import { useAssets } from '../api';
 import { AssetFormModal } from '../components/AssetFormModal';
+import { ConditionCheckModal } from '../components/ConditionCheckModal';
 import { ASSET_STATUS, ASSET_TYPE, CATEGORY, CRITICALITY, RISK, scoreColor } from '../presentation';
 import { ASSET_CATEGORIES, type Asset, type AssetCategory, type RiskLevel } from '../types';
 
 const RISK_ORDER: Record<RiskLevel, number> = { CRITICAL: 0, HIGH: 1, MODERATE: 2, LOW: 3 };
+
+const CRITICALITY_ORDER: Record<Asset['criticality'], number> = {
+  CRITICAL: 0,
+  HIGH: 1,
+  MEDIUM: 2,
+  LOW: 3,
+};
+
+type HealthFilter = 'AT_RISK' | 'OVERDUE';
+
+interface AssetFilters {
+  search: string;
+  category: AssetCategory | null;
+  health: HealthFilter | null;
+}
+
+const DEFAULT_FILTERS: AssetFilters = { search: '', category: null, health: null };
+
+const PRESETS: SavedView<AssetFilters>[] = [
+  { id: 'all', name: 'All assets', filters: DEFAULT_FILTERS },
+  { id: 'at-risk', name: 'At risk', filters: { ...DEFAULT_FILTERS, health: 'AT_RISK' } },
+  { id: 'overdue', name: 'Service overdue', filters: { ...DEFAULT_FILTERS, health: 'OVERDUE' } },
+  { id: 'pumps', name: 'Pumps', filters: { ...DEFAULT_FILTERS, category: 'PUMPING' } },
+];
 
 export function InfrastructurePage() {
   return <RequireFarm>{(farm) => <Infrastructure farm={farm} />}</RequireFarm>;
@@ -48,10 +79,10 @@ function Infrastructure({ farm }: { farm: Farm }) {
   const assets = useAssets(farm.id);
   const navigate = useNavigate();
   const [view, setView] = useState<'list' | 'network'>('list');
-  const [search, setSearch] = useState('');
-  const [category, setCategory] = useState<AssetCategory | null>(null);
-  const [risk, setRisk] = useState<string>('ALL');
+  const [filters, setFilters] = useState<AssetFilters>(DEFAULT_FILTERS);
+  const { search, category, health } = filters;
   const [formOpened, form] = useDisclosure(false);
+  const [command, clearCommand] = usePageCommand();
 
   const all = useMemo(() => assets.data ?? [], [assets.data]);
   const filtered = useMemo(() => {
@@ -59,9 +90,9 @@ function Infrastructure({ farm }: { farm: Farm }) {
     return all
       .filter((asset) => !category || asset.category === category)
       .filter((asset) =>
-        risk === 'ALL'
+        health == null
           ? true
-          : risk === 'AT_RISK'
+          : health === 'AT_RISK'
             ? isAtRisk(asset)
             : asset.health?.service?.overdue,
       )
@@ -78,7 +109,7 @@ function Infrastructure({ farm }: { farm: Farm }) {
           (a.health?.score ?? 100) - (b.health?.score ?? 100) ||
           a.name.localeCompare(b.name),
       );
-  }, [all, category, risk, search]);
+  }, [all, category, health, search]);
 
   const atRisk = all.filter(isAtRisk).length;
   const overdue = all.filter((asset) => asset.health?.service?.overdue).length;
@@ -94,7 +125,8 @@ function Infrastructure({ farm }: { farm: Farm }) {
     <>
       <PageHeader
         title="Infrastructure"
-        description="Every source, pump, filter and line that gets water to your crops. Health scores and service forecasts flag problems weeks before they stop irrigation."
+        description="Health and service outlook for every source, pump, filter and line."
+        help="Health scores and service forecasts flag problems weeks before they stop irrigation."
         actions={
           <Button leftSection={<IconPlus size={16} />} onClick={form.open}>
             Add asset
@@ -120,78 +152,90 @@ function Infrastructure({ farm }: { farm: Farm }) {
 
       {all.length > 0 && (
         <>
-          <SimpleGrid cols={{ base: 2, md: 4 }} spacing="md" mb="xl">
-            <StatCard
-              label="Assets"
-              value={all.length}
-              hint={`${new Set(all.map((a) => a.category)).size} system types`}
-              icon={<IconEngine size={16} />}
-              color="gray"
-            />
-            <StatCard
-              label="At risk"
-              value={atRisk}
-              hint="High or critical risk"
-              icon={<IconAlertTriangle size={16} />}
-              color={atRisk ? 'red' : 'teal'}
-            />
-            <StatCard
-              label="Service overdue"
-              value={overdue}
-              hint={`${dueSoon} more due within 14 days`}
-              icon={<IconCalendarDue size={16} />}
-              color={overdue ? 'orange' : 'teal'}
-            />
-            <StatCard
-              label="Down or degraded"
-              value={down}
-              hint="Reported by the team"
-              icon={<IconPlugConnectedX size={16} />}
-              color={down ? 'red' : 'teal'}
-            />
-          </SimpleGrid>
+          <Box mb="xl">
+            <MetricStrip label="Infrastructure at a glance">
+              <Metric
+                label="Assets"
+                value={all.length}
+                hint={`${new Set(all.map((a) => a.category)).size} system types`}
+              />
+              <Metric
+                label="At risk"
+                value={atRisk}
+                tone={atRisk ? 'critical' : 'good'}
+                hint="High or critical risk"
+              />
+              <Metric
+                label="Service overdue"
+                value={overdue}
+                tone={overdue ? 'serious' : 'good'}
+                hint={`${dueSoon} more due within 14 days`}
+              />
+              <Metric
+                label="Down or degraded"
+                value={down}
+                tone={down ? 'critical' : 'good'}
+                hint="Reported by the team"
+              />
+            </MetricStrip>
+          </Box>
 
-          <Group justify="space-between" mb="md" gap="sm">
-            <Group gap="sm">
-              <TextInput
-                placeholder="Search name, make, model"
-                leftSection={<IconSearch size={16} />}
-                value={search}
-                onChange={(event) => setSearch(event.currentTarget.value)}
-                w={240}
-                aria-label="Search assets"
-              />
-              <Select
-                placeholder="All systems"
-                data={ASSET_CATEGORIES.map((value) => ({ value, label: CATEGORY[value].label }))}
-                value={category}
-                onChange={(value) => setCategory(value as AssetCategory | null)}
-                clearable
-                w={200}
-                aria-label="Filter by system"
-              />
-              <SegmentedControl
-                value={risk}
-                onChange={setRisk}
-                data={[
-                  { value: 'ALL', label: 'All' },
-                  { value: 'AT_RISK', label: 'At risk' },
-                  { value: 'OVERDUE', label: 'Service overdue' },
-                ]}
-              />
-            </Group>
-            <SegmentedControl
-              value={view}
-              onChange={(value) => setView(value as 'list' | 'network')}
-              data={[
-                { value: 'list', label: 'List' },
-                { value: 'network', label: 'Water network' },
-              ]}
+          <FilterBar
+            search={{
+              value: search,
+              onChange: (value) => setFilters({ ...filters, search: value }),
+              placeholder: 'Search name, make, model',
+              label: 'Search assets',
+            }}
+            onReset={
+              sameFilters(filters, DEFAULT_FILTERS) ? undefined : () => setFilters(DEFAULT_FILTERS)
+            }
+            end={
+              <>
+                <Text size="sm" c="dimmed" className="app-num" visibleFrom="sm">
+                  {filtered.length} of {all.length}
+                </Text>
+                <SegmentedControl
+                  size="sm"
+                  value={view}
+                  onChange={(value) => setView(value as 'list' | 'network')}
+                  data={[
+                    { value: 'list', label: 'List' },
+                    { value: 'network', label: 'Network' },
+                  ]}
+                  aria-label="Display as"
+                />
+              </>
+            }
+          >
+            <FilterMenu
+              label="System"
+              allLabel="All"
+              value={category}
+              options={ASSET_CATEGORIES.map((value) => ({ value, label: CATEGORY[value].label }))}
+              onChange={(value) => setFilters({ ...filters, category: value })}
             />
-          </Group>
+            <FilterMenu
+              label="Health"
+              allLabel="All"
+              value={health}
+              options={[
+                { value: 'AT_RISK', label: 'At risk' },
+                { value: 'OVERDUE', label: 'Service overdue' },
+              ]}
+              onChange={(value) => setFilters({ ...filters, health: value })}
+            />
+            <SavedViewsMenu
+              storageKey="infrastructure"
+              presets={PRESETS}
+              current={filters}
+              onApply={setFilters}
+            />
+          </FilterBar>
 
           {view === 'list' ? (
             <AssetTable
+              farmId={farm.id}
               assets={filtered}
               onOpen={(asset) => navigate(`/farms/${farm.id}/assets/${asset.id}`)}
             />
@@ -206,8 +250,11 @@ function Infrastructure({ farm }: { farm: Farm }) {
       )}
 
       <AssetFormModal
-        opened={formOpened}
-        onClose={form.close}
+        opened={formOpened || command === 'new-asset'}
+        onClose={() => {
+          form.close();
+          clearCommand();
+        }}
         farmId={farm.id}
         onSaved={(asset) => navigate(`/farms/${farm.id}/assets/${asset.id}`)}
       />
@@ -243,7 +290,7 @@ function ServiceCell({ asset }: { asset: Asset }) {
     );
   }
   return (
-    <Stack gap={0}>
+    <Stack gap={0} style={{ whiteSpace: 'nowrap' }}>
       <Text
         size="sm"
         c={service.overdue ? 'red' : undefined}
@@ -261,30 +308,55 @@ function ServiceCell({ asset }: { asset: Asset }) {
   );
 }
 
-function AssetTable({ assets, onOpen }: { assets: Asset[]; onOpen: (asset: Asset) => void }) {
+function AssetTable({
+  farmId,
+  assets,
+  onOpen,
+}: {
+  farmId: string;
+  assets: Asset[];
+  onOpen: (asset: Asset) => void;
+}) {
+  const [checking, setChecking] = useState<Asset | null>(null);
+  const [ordering, setOrdering] = useState<Asset | null>(null);
+  const { sorted, header } = useSort(assets, {
+    name: (asset) => asset.name,
+    status: (asset) => ASSET_STATUS[asset.status].label,
+    health: (asset) => asset.health?.score,
+    service: (asset) => asset.health?.service?.dueOn,
+    criticality: (asset) => CRITICALITY_ORDER[asset.criticality],
+  });
+
   if (assets.length === 0) {
     return (
-      <Text c="dimmed" size="sm">
-        No assets match these filters.
-      </Text>
+      <EmptyState
+        icon={<IconSearch size={22} />}
+        title="No assets match these filters"
+        description="Clear a filter or pick another view."
+      />
     );
   }
   return (
-    <Card withBorder padding={0} style={{ overflow: 'hidden' }}>
-      <Table.ScrollContainer minWidth={900}>
-        <Table verticalSpacing="sm" highlightOnHover>
+    <Card withBorder padding={0} className="app-table-card">
+      <div className="app-table-scroll">
+        <Table highlightOnHover stickyHeader miw={960}>
           <Table.Thead>
             <Table.Tr>
-              <Table.Th>Asset</Table.Th>
-              <Table.Th>Status</Table.Th>
-              <Table.Th>Health</Table.Th>
-              <Table.Th>Next service</Table.Th>
+              <SortTh sort={header('name')} w={280}>
+                Asset
+              </SortTh>
+              <SortTh sort={header('status')}>Status</SortTh>
+              <SortTh sort={header('health')}>Health</SortTh>
+              <SortTh sort={header('service')}>Next service</SortTh>
               <Table.Th>Top issue</Table.Th>
-              <Table.Th>Criticality</Table.Th>
+              <SortTh sort={header('criticality')}>Criticality</SortTh>
+              <Table.Th w={96}>
+                <span className="app-visually-hidden">Actions</span>
+              </Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
-            {assets.map((asset) => {
+            {sorted.map((asset) => {
               const topFactor = asset.health?.factors.find((factor) => factor.impact < 0);
               return (
                 <Table.Tr
@@ -295,7 +367,7 @@ function AssetTable({ assets, onOpen }: { assets: Asset[]; onOpen: (asset: Asset
                   onKeyDown={(event) => event.key === 'Enter' && onOpen(asset)}
                   aria-label={`Open ${asset.name}`}
                 >
-                  <Table.Td>
+                  <Table.Td maw={280}>
                     <Group gap="sm" wrap="nowrap">
                       <AssetIcon asset={asset} />
                       <Stack gap={0} miw={0}>
@@ -319,7 +391,7 @@ function AssetTable({ assets, onOpen }: { assets: Asset[]; onOpen: (asset: Asset
                     {asset.health ? (
                       <Group gap="xs" wrap="nowrap">
                         <Text
-                          fw={650}
+                          fw={600}
                           c={scoreColor(asset.health.score)}
                           w={28}
                           ta="right"
@@ -338,7 +410,7 @@ function AssetTable({ assets, onOpen }: { assets: Asset[]; onOpen: (asset: Asset
                   <Table.Td>
                     <ServiceCell asset={asset} />
                   </Table.Td>
-                  <Table.Td maw={280}>
+                  <Table.Td miw={200} maw={280}>
                     <Text size="sm" lineClamp={2}>
                       {topFactor ? (
                         topFactor.label
@@ -352,12 +424,59 @@ function AssetTable({ assets, onOpen }: { assets: Asset[]; onOpen: (asset: Asset
                   <Table.Td>
                     <Text size="sm">{CRITICALITY[asset.criticality].label}</Text>
                   </Table.Td>
+                  <Table.Td onClick={(event) => event.stopPropagation()}>
+                    <Group gap={4} wrap="nowrap" justify="flex-end" className="app-row-action">
+                      <Tooltip label="Record a condition check">
+                        <ActionIcon
+                          variant="subtle"
+                          color="gray"
+                          aria-label={`Condition check for ${asset.name}`}
+                          onClick={() => setChecking(asset)}
+                        >
+                          <IconClipboardCheck size={17} />
+                        </ActionIcon>
+                      </Tooltip>
+                      <Tooltip label="New work order">
+                        <ActionIcon
+                          variant="subtle"
+                          color="gray"
+                          aria-label={`New work order for ${asset.name}`}
+                          onClick={() => setOrdering(asset)}
+                        >
+                          <IconTool size={17} />
+                        </ActionIcon>
+                      </Tooltip>
+                    </Group>
+                  </Table.Td>
                 </Table.Tr>
               );
             })}
           </Table.Tbody>
         </Table>
-      </Table.ScrollContainer>
+      </div>
+      {checking && (
+        <ConditionCheckModal
+          opened
+          onClose={() => setChecking(null)}
+          farmId={farmId}
+          asset={checking}
+        />
+      )}
+      <WorkOrderFormModal
+        opened={ordering != null}
+        onClose={() => setOrdering(null)}
+        farmId={farmId}
+        draft={
+          ordering
+            ? {
+                assetId: ordering.id,
+                kind: isAtRisk(ordering) ? 'PREDICTIVE' : 'CORRECTIVE',
+                priority: isAtRisk(ordering) ? 'HIGH' : 'MEDIUM',
+                title: `${ordering.name}: `,
+              }
+            : undefined
+        }
+      />
     </Card>
   );
 }

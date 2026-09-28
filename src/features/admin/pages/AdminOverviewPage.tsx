@@ -1,5 +1,6 @@
 import {
   Badge,
+  Box,
   Card,
   Group,
   SimpleGrid,
@@ -9,30 +10,20 @@ import {
   Title,
   UnstyledButton,
 } from '@mantine/core';
-import {
-  IconChevronRight,
-  IconDeviceDesktop,
-  IconGrid4x4,
-  IconHistory,
-  IconLeaf,
-  IconLock,
-  IconPlant2,
-  IconShieldCheck,
-  IconUsers,
-} from '@tabler/icons-react';
+import { IconChevronRight, IconHistory, IconUsers } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 
 import { PageHeader } from '@/components/PageHeader';
 import { ErrorState, LoadingState } from '@/components/QueryStates';
-import { StatCard } from '@/components/StatCard';
+import { Metric, MetricStrip } from '@/components/MetricStrip';
 import { humanize } from '@/lib/format';
 
 import { useAdminOverview, useSystemHealth } from '../api';
 import { DemoFarmCard } from '../components/DemoFarmCard';
 
 const statusColor = (status: string) =>
-  status === 'UP' ? 'teal' : status === 'UNKNOWN' ? 'gray' : 'red';
+  status === 'UP' ? 'green' : status === 'UNKNOWN' ? 'gray' : 'red';
 
 const STATUS_LABEL: Record<string, string> = {
   UP: 'Healthy',
@@ -65,59 +56,41 @@ export function AdminOverviewPage() {
       />
       {overview.isError && <ErrorState error={overview.error} onRetry={() => overview.refetch()} />}
 
-      <SimpleGrid cols={{ base: 1, xs: 2, lg: 4 }} mb="lg">
-        <StatCard
-          label="Users"
-          value={data?.users.total ?? 0}
-          hint={data ? `${data.users.enabled} enabled` : undefined}
-          icon={<IconUsers size={20} />}
-          loading={overview.isPending}
-        />
-        <StatCard
-          label="Administrators"
-          value={data?.users.admins ?? 0}
-          icon={<IconShieldCheck size={20} />}
-          loading={overview.isPending}
-        />
-        <StatCard
-          label="Locked accounts"
-          value={data?.users.locked ?? 0}
-          icon={<IconLock size={20} />}
-          color={data?.users.locked ? 'orange' : 'teal'}
-          loading={overview.isPending}
-        />
-        <StatCard
-          label="Active sessions"
-          value={data?.activeSessions ?? 0}
-          icon={<IconDeviceDesktop size={20} />}
-          loading={overview.isPending}
-        />
-        <StatCard
-          label="Farms"
-          value={data?.farms.farms ?? 0}
-          icon={<IconPlant2 size={20} />}
-          loading={overview.isPending}
-        />
-        <StatCard
-          label="Fields"
-          value={data?.farms.fields ?? 0}
-          icon={<IconGrid4x4 size={20} />}
-          loading={overview.isPending}
-        />
-        <StatCard
-          label="Crops"
-          value={data?.farms.crops ?? 0}
-          icon={<IconLeaf size={20} />}
-          loading={overview.isPending}
-        />
-      </SimpleGrid>
+      <Box mb="lg">
+        <MetricStrip label="Platform numbers">
+          <Metric
+            label="Users"
+            value={data?.users.total ?? 0}
+            hint={data ? `${data.users.enabled} enabled` : undefined}
+            loading={overview.isPending}
+          />
+          <Metric
+            label="Administrators"
+            value={data?.users.admins ?? 0}
+            loading={overview.isPending}
+          />
+          <Metric
+            label="Locked accounts"
+            value={data?.users.locked ?? 0}
+            tone={data?.users.locked ? 'warning' : undefined}
+            hint={data?.users.locked ? 'Unlock them from Users' : 'None locked'}
+            loading={overview.isPending}
+          />
+          <Metric
+            label="Active sessions"
+            value={data?.activeSessions ?? 0}
+            loading={overview.isPending}
+          />
+          <Metric label="Farms" value={data?.farms.farms ?? 0} loading={overview.isPending} />
+          <Metric label="Fields" value={data?.farms.fields ?? 0} loading={overview.isPending} />
+          <Metric label="Crops" value={data?.farms.crops ?? 0} loading={overview.isPending} />
+        </MetricStrip>
+      </Box>
 
       <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
         <Card withBorder>
           <Group justify="space-between" mb="md">
-            <Title order={3} fz="lg">
-              System health
-            </Title>
+            <Title order={2}>System health</Title>
             {health.data && (
               <Badge color={statusColor(health.data.status)} variant="dot">
                 {STATUS_LABEL[health.data.status] ?? humanize(health.data.status)}

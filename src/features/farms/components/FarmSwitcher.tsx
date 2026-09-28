@@ -13,16 +13,7 @@ function FarmTile({ name, size = 30 }: { name: string; size?: number }) {
     .map((word) => word[0]?.toUpperCase())
     .join('');
   return (
-    <Box
-      w={size}
-      h={size}
-      bg="var(--app-brand-soft)"
-      c="brand"
-      fz={size * 0.4}
-      fw={700}
-      style={{ borderRadius: 8, display: 'grid', placeItems: 'center', flexShrink: 0 }}
-      aria-hidden
-    >
+    <Box className="app-farm-tile" w={size} h={size} fz={size * 0.4} aria-hidden>
       {letters}
     </Box>
   );

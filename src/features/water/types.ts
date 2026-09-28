@@ -16,6 +16,19 @@ export interface DailyWater {
   requirementM3: number;
   rainMm: number;
   et0Mm: number;
+  energyKwh: number;
+}
+
+/** The same totals for the period of equal length just before the reported one. */
+export interface PeriodTotals {
+  from: string;
+  to: string;
+  appliedM3: number;
+  requirementM3: number;
+  savedM3: number;
+  savedPct: number | null;
+  energyKwh: number;
+  energyCost: number | null;
 }
 
 export interface SourceAllocation {
@@ -46,4 +59,6 @@ export interface WaterSummary {
   daily: DailyWater[];
   allocations: SourceAllocation[];
   unattributedYearToDateM3: number;
+  /** Null when the preceding period is outside the simulated history. */
+  previous: PeriodTotals | null;
 }

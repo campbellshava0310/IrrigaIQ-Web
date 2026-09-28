@@ -1,5 +1,5 @@
-import { Anchor, Box, Group, Stack, Text, Title } from '@mantine/core';
-import { IconChevronLeft } from '@tabler/icons-react';
+import { ActionIcon, Anchor, Box, Group, Stack, Text, Title, Tooltip } from '@mantine/core';
+import { IconChevronLeft, IconInfoCircle } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 
@@ -10,9 +10,11 @@ interface PageHeaderProps {
   back?: { to: string; label: string };
   /** Small line above the title: the farm, a date, a status. */
   eyebrow?: ReactNode;
+  /** How the page works, behind an info icon, so the description can stay one line. */
+  help?: string;
 }
 
-export function PageHeader({ title, description, actions, back, eyebrow }: PageHeaderProps) {
+export function PageHeader({ title, description, actions, back, eyebrow, help }: PageHeaderProps) {
   return (
     <Stack gap={10} mb={28}>
       {back && (
@@ -38,9 +40,18 @@ export function PageHeader({ title, description, actions, back, eyebrow }: PageH
               {eyebrow}
             </Text>
           )}
-          <Title order={1} fz={{ base: 24, sm: 28 }} lts={-0.6} lh={1.2}>
-            {title}
-          </Title>
+          <Group gap={8} wrap="nowrap" align="center">
+            <Title order={1} fz={{ base: 24, sm: 28 }} lh={1.2}>
+              {title}
+            </Title>
+            {help && (
+              <Tooltip label={help} multiline w={320} position="bottom-start">
+                <ActionIcon variant="subtle" color="gray" size="sm" aria-label={help}>
+                  <IconInfoCircle size={17} />
+                </ActionIcon>
+              </Tooltip>
+            )}
+          </Group>
           {description && (
             <Text c="dimmed" fz="md" maw={680} mt={6}>
               {description}

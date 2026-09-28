@@ -16,71 +16,176 @@ import {
   Tabs,
   ThemeIcon,
   Tooltip,
+  alpha,
+  type CSSVariablesResolver,
   type MantineColorsTuple,
 } from '@mantine/core';
 
-/** IrrigaIQ teal: shade 7 is the light-mode accent, shade 4 the dark-mode accent (same as the app). */
+/*
+ * IrrigaIQ palette: deep forest for the brand, water teal, intelligence blue, a controlled status
+ * scale, and green-tinted slate neutrals. Each scale puts its light-mode colour at shade 7 and a
+ * lighter dark-mode colour at shade 6 (the primaryShade pair below); shade 4 is dark-mode text.
+ *
+ *   brand   #174A3A deep forest: logo, primary actions, navigation highlight, crop and soil
+ *   teal    #159A9C water: consumption, flow, volumes, savings
+ *   blue    #3B82F6 intelligence: AI insights, information, weather and rain
+ *   green   #2E8B57 healthy       yellow  #D99A24 warning (moderate, soon)
+ *   orange  #CF6F35 serious (act now, high risk)       red  #C94B4B critical
+ */
 const brand: MantineColorsTuple = [
-  '#E8F6F7',
-  '#CFEBEE',
-  '#A2D8DD',
-  '#71C3CB',
-  '#48B0BA',
-  '#2E9FAB',
-  '#168D99',
-  '#0A7C86',
-  '#08666F',
-  '#064F57',
+  '#ECF4EF',
+  '#D6E8DD',
+  '#AACFBA',
+  '#7DB695',
+  '#549E77',
+  '#3C8C66',
+  '#2F7D5B',
+  '#174A3A',
+  '#123D30',
+  '#0C2B22',
 ];
 
-/** Success green, distinct from the brand teal so "healthy" never reads as "selected". */
 const teal: MantineColorsTuple = [
-  '#E7F7EF',
-  '#CDEEDD',
-  '#9CDDBB',
-  '#67CB97',
-  '#3DBB79',
-  '#22B166',
-  '#12A15A',
-  '#12875A',
-  '#0B6F49',
-  '#055837',
+  '#E6F6F6',
+  '#CCEDED',
+  '#9BDBDC',
+  '#67C8CA',
+  '#3EB8BA',
+  '#2DAFB1',
+  '#22A7A9',
+  '#159A9C',
+  '#0F7E80',
+  '#0A6163',
 ];
 
-/** Cool neutrals for text, borders and fills. */
+const blue: MantineColorsTuple = [
+  '#EFF6FF',
+  '#DBEAFE',
+  '#BFDBFE',
+  '#93C5FD',
+  '#7AB4FB',
+  '#60A5FA',
+  '#4B92F8',
+  '#3B82F6',
+  '#2563EB',
+  '#1D4ED8',
+];
+
+const green: MantineColorsTuple = [
+  '#EAF5EF',
+  '#D0EADB',
+  '#A3D5B8',
+  '#74BF94',
+  '#52AE7A',
+  '#43A26D',
+  '#389862',
+  '#2E8B57',
+  '#237047',
+  '#185536',
+];
+
+const yellow: MantineColorsTuple = [
+  '#FCF5E6',
+  '#F8E8C5',
+  '#F1D193',
+  '#EABA5F',
+  '#E6B04E',
+  '#E2A73C',
+  '#DEA130',
+  '#D99A24',
+  '#9A6B16',
+  '#6E4C10',
+];
+
+const orange: MantineColorsTuple = [
+  '#FCF0E9',
+  '#F7DCCD',
+  '#EFB899',
+  '#E69466',
+  '#DF8050',
+  '#DA7644',
+  '#D5723D',
+  '#CF6F35',
+  '#A1531F',
+  '#773D17',
+];
+
+const red: MantineColorsTuple = [
+  '#FBEDED',
+  '#F5D5D5',
+  '#EBAAAA',
+  '#E08080',
+  '#D96A6A',
+  '#D35C5C',
+  '#CE5353',
+  '#C94B4B',
+  '#A33A3A',
+  '#7A2B2B',
+];
+
+/** Green-tinted slate: muted text #64736D, borders #DCE4E0, canvas #F7F9F7, ink #17201D. */
 const gray: MantineColorsTuple = [
-  '#F7F8F9',
-  '#F1F3F4',
-  '#E7EAEC',
-  '#DADEE1',
-  '#C3C9CD',
-  '#9AA2A9',
-  '#6E767D',
-  '#50585E',
-  '#383E43',
-  '#22272B',
+  '#F7F9F7',
+  '#EEF2F0',
+  '#E5EBE8',
+  '#DCE4E0',
+  '#C3CEC9',
+  '#94A39D',
+  '#64736D',
+  '#4A5752',
+  '#2F3A36',
+  '#17201D',
 ];
 
-/** Dark-mode surfaces: near-black canvas, lifted cards, soft borders. */
+/** Dark mode: canvas #0B1110, surface #111817, elevated #18211E, text #F1F5F3 / #9AA8A2. */
 const dark: MantineColorsTuple = [
-  '#E4E7EA',
-  '#B8BFC5',
-  '#8E979E',
-  '#666F76',
-  '#353B40',
-  '#262B2F',
-  '#1C2023',
-  '#15181A',
-  '#0F1113',
-  '#0A0C0D',
+  '#F1F5F3',
+  '#C9D3CF',
+  '#9AA8A2',
+  '#6E7C76',
+  '#2F3D38',
+  '#26332F',
+  '#18211E',
+  '#111817',
+  '#0E1513',
+  '#0B1110',
 ];
+
+const ACCENTS = { brand, teal, blue, green, yellow, orange, red };
+
+/**
+ * Two adjustments to Mantine's generated colour variables:
+ * - light mode: text in the lighter accents (water teal, amber, blue...) uses shade 8, so words
+ *   stay readable on white while dots, icons and fills keep the canonical colour;
+ * - dark mode: tints are a translucent wash of the accent (Mantine darkens shade 9, which vanishes
+ *   on this near-black canvas) and tinted content uses shade 4 rather than near-white.
+ */
+export const cssVariablesResolver: CSSVariablesResolver = () => ({
+  variables: {},
+  light: Object.fromEntries(
+    (['teal', 'blue', 'green', 'yellow', 'orange'] as const).map((name) => [
+      `--mantine-color-${name}-text`,
+      `var(--mantine-color-${name}-8)`,
+    ]),
+  ),
+  dark: Object.fromEntries([
+    ...Object.entries(ACCENTS).flatMap(([name, shades]) => [
+      [`--mantine-color-${name}-light`, alpha(shades[6], 0.16)],
+      [`--mantine-color-${name}-light-hover`, alpha(shades[6], 0.24)],
+      [`--mantine-color-${name}-light-color`, `var(--mantine-color-${name}-4)`],
+    ]),
+    ['--mantine-color-gray-light', alpha(gray[5], 0.14)],
+    ['--mantine-color-gray-light-hover', alpha(gray[5], 0.2)],
+    ['--mantine-color-gray-light-color', 'var(--mantine-color-dark-1)'],
+  ]),
+});
 
 export const theme = createTheme({
   primaryColor: 'brand',
-  primaryShade: { light: 7, dark: 4 },
-  colors: { brand, teal, gray, dark },
+  primaryShade: { light: 7, dark: 6 },
+  colors: { ...ACCENTS, gray, dark },
   white: '#FFFFFF',
-  black: '#0B1215',
+  black: '#17201D',
   fontFamily:
     '"Inter Variable", Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
   fontFamilyMonospace: 'ui-monospace, SFMono-Regular, Menlo, monospace',
@@ -90,20 +195,22 @@ export const theme = createTheme({
   defaultRadius: 'sm',
   spacing: { xs: '8px', sm: '12px', md: '16px', lg: '24px', xl: '32px' },
   shadows: {
-    xs: '0 1px 2px rgba(16, 24, 40, 0.04)',
-    sm: '0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.05)',
-    md: '0 2px 4px -2px rgba(16, 24, 40, 0.05), 0 6px 16px -4px rgba(16, 24, 40, 0.08)',
-    lg: '0 4px 8px -4px rgba(16, 24, 40, 0.06), 0 16px 32px -8px rgba(16, 24, 40, 0.12)',
-    xl: '0 8px 16px -8px rgba(16, 24, 40, 0.08), 0 24px 48px -12px rgba(16, 24, 40, 0.18)',
+    xs: '0 1px 2px rgba(23, 32, 29, 0.04)',
+    sm: '0 1px 2px rgba(23, 32, 29, 0.05)',
+    md: '0 4px 12px -4px rgba(23, 32, 29, 0.08)',
+    lg: '0 12px 28px -10px rgba(23, 32, 29, 0.16)',
+    xl: '0 20px 44px -14px rgba(23, 32, 29, 0.22)',
   },
+  // One scale: page title 28 (h1), card and section titles 16 (h2), sub-sections 15 (h3); larger
+  // section headings set their size explicitly. Weights: 400 body, 500 labels, 600 headings and figures.
   headings: {
-    fontWeight: '650',
+    fontWeight: '600',
     sizes: {
       h1: { fontSize: '28px', lineHeight: '1.2' },
-      h2: { fontSize: '24px', lineHeight: '1.25' },
-      h3: { fontSize: '20px', lineHeight: '1.3' },
-      h4: { fontSize: '16px', lineHeight: '1.4' },
-      h5: { fontSize: '14px', lineHeight: '1.4' },
+      h2: { fontSize: '16px', lineHeight: '1.4' },
+      h3: { fontSize: '15px', lineHeight: '1.4' },
+      h4: { fontSize: '14px', lineHeight: '1.4' },
+      h5: { fontSize: '13px', lineHeight: '1.4' },
     },
   },
   cursorType: 'pointer',
@@ -131,7 +238,11 @@ export const theme = createTheme({
       classNames: { root: 'app-segmented', label: 'app-segmented-label' },
     }),
     Modal: Modal.extend({
-      defaultProps: { radius: 'lg', overlayProps: { backgroundOpacity: 0.35, blur: 3 } },
+      defaultProps: {
+        radius: 'lg',
+        overlayProps: { backgroundOpacity: 0.35, blur: 3 },
+        closeButtonProps: { 'aria-label': 'Close' },
+      },
       classNames: { title: 'app-modal-title', content: 'app-modal-content' },
     }),
     Menu: Menu.extend({

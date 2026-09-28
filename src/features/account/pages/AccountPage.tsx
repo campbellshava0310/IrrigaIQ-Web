@@ -43,7 +43,7 @@ export function AccountPage() {
       <Stack gap="lg">
         <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
           <Card withBorder>
-            <Title order={3} fz="lg" mb="md">
+            <Title order={2} mb="md">
               Profile
             </Title>
             {user && (
@@ -56,7 +56,7 @@ export function AccountPage() {
             )}
           </Card>
           <Card withBorder>
-            <Title order={3} fz="lg" mb={4}>
+            <Title order={2} mb={4}>
               Password
             </Title>
             <Text size="sm" c="dimmed" mb="md">
@@ -226,9 +226,7 @@ function SessionsCard() {
     <Card withBorder>
       <Group justify="space-between" mb="md">
         <div>
-          <Title order={3} fz="lg">
-            Signed-in devices
-          </Title>
+          <Title order={2}>Signed-in devices</Title>
           <Text size="sm" c="dimmed">
             Sessions stay signed in for 30 days of inactivity at most.
           </Text>
@@ -246,15 +244,17 @@ function SessionsCard() {
       {sessions.isPending && <LoadingState />}
       {sessions.isError && <ErrorState error={sessions.error} onRetry={() => sessions.refetch()} />}
       {sessions.data && (
-        <Table.ScrollContainer minWidth={560}>
-          <Table verticalSpacing="sm">
+        <div className="app-table-scroll">
+          <Table stickyHeader miw={560} verticalSpacing="sm">
             <Table.Thead>
               <Table.Tr>
                 <Table.Th>Device</Table.Th>
                 <Table.Th>IP address</Table.Th>
                 <Table.Th>Last active</Table.Th>
                 <Table.Th>Signed in</Table.Th>
-                <Table.Th />
+                <Table.Th>
+                  <span className="app-visually-hidden">Actions</span>
+                </Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -269,7 +269,7 @@ function SessionsCard() {
                       )}
                       <Text size="sm">{describeUserAgent(item.userAgent)}</Text>
                       {item.current && (
-                        <Badge size="sm" variant="dot" color="teal">
+                        <Badge size="sm" variant="dot" color="green">
                           This device
                         </Badge>
                       )}
@@ -293,7 +293,7 @@ function SessionsCard() {
               ))}
             </Table.Tbody>
           </Table>
-        </Table.ScrollContainer>
+        </div>
       )}
     </Card>
   );

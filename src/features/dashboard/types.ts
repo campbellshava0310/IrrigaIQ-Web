@@ -77,14 +77,20 @@ export interface Dashboard {
   };
   water: {
     weekAppliedM3: number;
+    /** The same figure for the 7 days before; null when outside the simulated history. */
+    previousWeekAppliedM3: number | null;
     weekRequirementM3: number;
     weekAdequacyPct: number | null;
     monthSavedM3: number;
+    previousMonthSavedM3: number | null;
     monthSavedPct: number | null;
     weekEnergyKwh: number;
+    previousWeekEnergyKwh: number | null;
     weekEnergyCost: number | null;
     currency: string;
     baselineDescription: string;
+    /** The last 30 days, oldest first, for trend lines. */
+    daily: { date: string; appliedM3: number; energyKwh: number }[];
   };
   assets: {
     total: number;

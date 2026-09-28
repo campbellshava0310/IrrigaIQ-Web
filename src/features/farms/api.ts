@@ -95,10 +95,11 @@ export function useDeleteFarm() {
 
 // ---- Fields ----
 
-export function useFields(farmId: string) {
+export function useFields(farmId: string, enabled = true) {
   return useQuery({
     queryKey: farmKeys.fields(farmId),
     queryFn: () => farmsApi.listFields(farmId),
+    enabled: Boolean(farmId) && enabled,
   });
 }
 

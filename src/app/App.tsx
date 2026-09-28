@@ -10,7 +10,7 @@ import { session } from '@/lib/auth/session';
 
 import { queryClient } from './queryClient';
 import { router } from './router';
-import { theme } from './theme';
+import { cssVariablesResolver, theme } from './theme';
 
 /** Restores the session on load and drops all cached server data when it ends. */
 function useSessionLifecycle() {
@@ -30,7 +30,11 @@ function useSessionLifecycle() {
 export function App() {
   useSessionLifecycle();
   return (
-    <MantineProvider theme={theme} defaultColorScheme="auto">
+    <MantineProvider
+      theme={theme}
+      cssVariablesResolver={cssVariablesResolver}
+      defaultColorScheme="auto"
+    >
       <QueryClientProvider client={queryClient}>
         <ModalsProvider>
           <Notifications position="top-right" />

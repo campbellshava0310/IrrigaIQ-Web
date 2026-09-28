@@ -1,3 +1,4 @@
+import { chartTooltip } from '@/components/charts/chartTooltip';
 import { LineChart } from '@/lib/charts';
 import { Card, Group, SegmentedControl, Table, Text } from '@mantine/core';
 import { useState } from 'react';
@@ -78,7 +79,7 @@ export function AssetTrendChart({ asset, checks }: { asset: Asset; checks: Condi
     <Card withBorder padding="md">
       <Group justify="space-between" align="flex-start" mb="xs" gap="xs">
         <div>
-          <Text fw={600} size="sm">
+          <Text fw={600} fz="md">
             {spec.title} ({spec.unit.trim()})
           </Text>
           <Text size="xs" c="dimmed" maw={640}>
@@ -109,7 +110,7 @@ export function AssetTrendChart({ asset, checks }: { asset: Asset; checks: Condi
           h={220}
           data={data}
           dataKey="label"
-          series={[{ name: 'value', label: spec.title, color: 'var(--viz-series-1)' }]}
+          series={[{ name: 'value', label: spec.title, color: 'var(--viz-equipment)' }]}
           curveType="linear"
           strokeWidth={2}
           dotProps={{ r: 4, strokeWidth: 2, stroke: 'var(--mantine-color-body)' }}
@@ -124,6 +125,25 @@ export function AssetTrendChart({ asset, checks }: { asset: Asset; checks: Condi
           gridAxis="x"
           strokeDasharray="0"
           gridProps={{ stroke: 'var(--viz-grid)' }}
+          tooltipProps={chartTooltip({
+            series: { value: spec.title },
+            format: (value) => `${formatNumber(value, spec.digits)}${spec.unit}`,
+            footer: (row) =>
+              spec.reference ? (
+                Number(row.value) >= spec.reference.y ? (
+                  <Text size="xs" c="red">
+                    At or past the {spec.reference.label.toLowerCase()}
+                  </Text>
+                ) : (
+                  <Text size="xs" c="dimmed" className="app-num">
+                    {formatNumber(
+                      (100 * (spec.reference.y - Number(row.value))) / spec.reference.y,
+                    )}
+                    % below the {spec.reference.label.toLowerCase()}
+                  </Text>
+                )
+              ) : null,
+          })}
           referenceLines={
             spec.reference
               ? [
@@ -139,7 +159,11 @@ export function AssetTrendChart({ asset, checks }: { asset: Asset; checks: Condi
           }
         />
       ) : (
-        <Table.ScrollContainer minWidth={360} maxHeight={260}>
+        <Table.ScrollContainer
+          minWidth={360}
+          maxHeight={260}
+          scrollAreaProps={{ viewportProps: { tabIndex: 0, 'aria-label': 'Scrollable table' } }}
+        >
           <Table striped verticalSpacing={6} style={{ fontVariantNumeric: 'tabular-nums' }}>
             <Table.Thead>
               <Table.Tr>

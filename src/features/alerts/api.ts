@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { http } from '@/lib/api/client';
 import { farmOps, useInvalidateFarmOps } from '@/lib/api/farmScope';
@@ -33,12 +33,47 @@ export function useAlerts(farmId: string | undefined, includeResolved = false) {
   });
 }
 
+/**
+ * Acknowledge or resolve, applied to the cached lists at once (the card updates before the
+ * server answers) and rolled back if the request fails.
+ */
 export function useAlertAction(farmId: string) {
+  const queryClient = useQueryClient();
   const invalidate = useInvalidateFarmOps();
   return useMutation({
     mutationFn: ({ id, action }: { id: string; action: 'acknowledge' | 'resolve' }) =>
       action === 'acknowledge' ? alertsApi.acknowledge(farmId, id) : alertsApi.resolve(farmId, id),
-    onSuccess: () => invalidate(farmId),
+    onMutate: async ({ id, action }) => {
+      const keys = [alertKeys.list(farmId, false), alertKeys.list(farmId, true)];
+      await Promise.all(keys.map((queryKey) => queryClient.cancelQueries({ queryKey })));
+      const snapshots = keys.map(
+        (queryKey) => [queryKey, queryClient.getQueryData<Alert[]>(queryKey)] as const,
+      );
+      const now = new Date().toISOString();
+      for (const [queryKey, alerts] of snapshots) {
+        if (!alerts) continue;
+        const activeOnly = queryKey === keys[0];
+        queryClient.setQueryData<Alert[]>(
+          queryKey,
+          alerts
+            .map((alert): Alert =>
+              alert.id !== id
+                ? alert
+                : action === 'acknowledge'
+                  ? { ...alert, state: 'ACKNOWLEDGED', updatedAt: now }
+                  : { ...alert, state: 'RESOLVED', resolvedAt: now, updatedAt: now },
+            )
+            .filter((alert) => !(activeOnly && alert.state === 'RESOLVED')),
+        );
+      }
+      return { snapshots };
+    },
+    onError: (_error, _variables, context) => {
+      context?.snapshots.forEach(([queryKey, alerts]) =>
+        queryClient.setQueryData(queryKey, alerts),
+      );
+    },
+    onSettled: () => invalidate(farmId),
   });
 }
 

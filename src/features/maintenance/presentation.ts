@@ -1,14 +1,14 @@
 import type { WorkOrderKind, WorkOrderPriority, WorkOrderStatus } from './types';
 
 export const KIND: Record<WorkOrderKind, { label: string; color: string; description: string }> = {
-  PREVENTIVE: { label: 'Preventive', color: 'teal', description: 'Scheduled service' },
+  PREVENTIVE: { label: 'Preventive', color: 'green', description: 'Scheduled service' },
   PREDICTIVE: {
     label: 'Predictive',
-    color: 'violet',
+    color: 'blue',
     description: 'Raised by a health warning before failure',
   },
   CORRECTIVE: { label: 'Corrective', color: 'orange', description: 'Repair after a fault' },
-  INSPECTION: { label: 'Inspection', color: 'blue', description: 'Look-and-record visit' },
+  INSPECTION: { label: 'Inspection', color: 'gray', description: 'Look-and-record visit' },
 };
 
 export const PRIORITY: Record<WorkOrderPriority, { label: string; color: string; rank: number }> = {
@@ -20,8 +20,8 @@ export const PRIORITY: Record<WorkOrderPriority, { label: string; color: string;
 
 export const STATUS: Record<WorkOrderStatus, { label: string; color: string }> = {
   OPEN: { label: 'Open', color: 'gray' },
-  SCHEDULED: { label: 'Scheduled', color: 'blue' },
-  IN_PROGRESS: { label: 'In progress', color: 'yellow' },
-  DONE: { label: 'Done', color: 'teal' },
+  SCHEDULED: { label: 'Scheduled', color: 'gray' },
+  IN_PROGRESS: { label: 'In progress', color: 'blue' },
+  DONE: { label: 'Done', color: 'green' },
   CANCELLED: { label: 'Cancelled', color: 'gray' },
 };

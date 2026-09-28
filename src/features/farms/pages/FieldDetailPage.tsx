@@ -181,9 +181,7 @@ export function FieldDetailPage() {
 
           {planted && (
             <Stack gap="sm" mb="xl">
-              <Title order={3} fz="lg">
-                Water balance
-              </Title>
+              <Title order={2}>Water balance</Title>
               <WaterBalanceCharts
                 days={balance.data.days}
                 today={balance.data.today}
@@ -260,7 +258,7 @@ export function FieldDetailPage() {
 function SeasonCard({ season }: { season: Season }) {
   const progress = Math.min(100, (season.daysAfterPlanting / season.seasonLengthDays) * 100);
   const yieldColor =
-    season.yieldReductionPct >= 10 ? 'red' : season.yieldReductionPct >= 3 ? 'orange' : 'teal';
+    season.yieldReductionPct >= 10 ? 'red' : season.yieldReductionPct >= 3 ? 'orange' : 'green';
   return (
     <Card withBorder>
       <Group justify="space-between" mb="xs">
@@ -300,7 +298,7 @@ function SeasonCard({ season }: { season: Season }) {
             <Text size="xs" c="dimmed">
               Expected yield
             </Text>
-            <Text fw={650} fz="lg">
+            <Text fw={600} fz="md">
               {formatNumber(season.expectedYieldTHa, 1)} t/ha
               <Text span size="sm" c="dimmed" fw={400}>
                 {' '}
@@ -422,7 +420,7 @@ function FieldIrrigationLog({
   });
   const sorted = [...(events.data ?? [])].sort((a, b) => b.startedAt.localeCompare(a.startedAt));
   return (
-    <Card withBorder padding={0} style={{ overflow: 'hidden' }}>
+    <Card withBorder padding={0} className="app-table-card">
       <Group justify="space-between" p="md" pb="xs">
         <Text fw={600}>Irrigation log</Text>
         <Text size="xs" c="dimmed">
@@ -461,7 +459,7 @@ function SoilChecks({
 }) {
   const observations = useSoilObservations(farmId, fieldId);
   return (
-    <Card withBorder padding={0} style={{ overflow: 'hidden' }}>
+    <Card withBorder padding={0} className="app-table-card">
       <Group justify="space-between" p="md" pb="xs">
         <Text fw={600}>Soil checks</Text>
         <Button
@@ -484,8 +482,8 @@ function SoilChecks({
         </Text>
       )}
       {observations.data && observations.data.length > 0 && (
-        <Table.ScrollContainer minWidth={420}>
-          <Table verticalSpacing="sm">
+        <div className="app-table-scroll">
+          <Table stickyHeader miw={420} verticalSpacing="sm">
             <Table.Thead>
               <Table.Tr>
                 <Table.Th>When</Table.Th>
@@ -509,7 +507,7 @@ function SoilChecks({
               ))}
             </Table.Tbody>
           </Table>
-        </Table.ScrollContainer>
+        </div>
       )}
     </Card>
   );
@@ -540,9 +538,7 @@ function CropsSection({ farmId, fieldId }: { farmId: string; fieldId: string }) 
   return (
     <>
       <Group justify="space-between" mb="sm">
-        <Title order={3} fz="lg">
-          Crops
-        </Title>
+        <Title order={2}>Crops</Title>
         <Button size="sm" leftSection={<IconPlus size={16} />} onClick={() => openCropForm()}>
           Add crop
         </Button>
@@ -562,9 +558,9 @@ function CropsSection({ farmId, fieldId }: { farmId: string; fieldId: string }) 
         />
       )}
       {crops.data && crops.data.length > 0 && (
-        <Card withBorder padding={0} style={{ overflow: 'hidden' }}>
-          <Table.ScrollContainer minWidth={640}>
-            <Table verticalSpacing="sm">
+        <Card withBorder padding={0} className="app-table-card">
+          <div className="app-table-scroll">
+            <Table stickyHeader miw={640} verticalSpacing="sm">
               <Table.Thead>
                 <Table.Tr>
                   <Table.Th>Crop</Table.Th>
@@ -572,7 +568,9 @@ function CropsSection({ farmId, fieldId }: { farmId: string; fieldId: string }) 
                   <Table.Th>Planted</Table.Th>
                   <Table.Th>Growth stage</Table.Th>
                   <Table.Th ta="right">Target yield</Table.Th>
-                  <Table.Th w={48} />
+                  <Table.Th w={48}>
+                    <span className="app-visually-hidden">Actions</span>
+                  </Table.Th>
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
@@ -617,7 +615,7 @@ function CropsSection({ farmId, fieldId }: { farmId: string; fieldId: string }) 
                 ))}
               </Table.Tbody>
             </Table>
-          </Table.ScrollContainer>
+          </div>
         </Card>
       )}
       <CropFormModal

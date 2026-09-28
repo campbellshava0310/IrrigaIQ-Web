@@ -51,7 +51,7 @@ export const WATER_STATUS: Record<WaterStatus, Presentation & { description: str
   },
   ADEQUATE: {
     label: 'Adequate',
-    color: 'teal',
+    color: 'green',
     icon: IconCircleCheck,
     description: 'The crop has the water it needs.',
   },
@@ -74,7 +74,7 @@ export const DECISION: Record<Decision, Presentation> = {
   IRRIGATE_SOON: { label: 'Irrigate soon', color: 'yellow', icon: IconClock },
   HOLD_FOR_RAIN: { label: 'Hold for rain', color: 'blue', icon: IconCloudRain },
   SCHEDULED: { label: 'Scheduled', color: 'blue', icon: IconCalendarCheck },
-  ON_TRACK: { label: 'On track', color: 'teal', icon: IconCircleCheck },
+  ON_TRACK: { label: 'On track', color: 'green', icon: IconCircleCheck },
   NOT_PLANTED: { label: 'Not planted', color: 'gray', icon: IconPlant },
   SEASON_ENDED: { label: 'Season ended', color: 'gray', icon: IconFlag },
 };
@@ -107,7 +107,7 @@ export function wantsWater(decision: Decision): boolean {
 }
 
 export const CONFIDENCE: Record<Confidence, { label: string; color: string }> = {
-  HIGH: { label: 'High confidence', color: 'teal' },
+  HIGH: { label: 'High confidence', color: 'green' },
   MEDIUM: { label: 'Medium confidence', color: 'blue' },
   LOW: { label: 'Low confidence', color: 'gray' },
 };
@@ -122,7 +122,7 @@ export const PHASE_LABEL: Record<GrowthPhase, string> = {
 
 export const EVENT_STATUS: Record<IrrigationStatus, { label: string; color: string }> = {
   PLANNED: { label: 'Planned', color: 'blue' },
-  COMPLETED: { label: 'Completed', color: 'teal' },
+  COMPLETED: { label: 'Completed', color: 'green' },
   SKIPPED: { label: 'Skipped', color: 'gray' },
   CANCELLED: { label: 'Cancelled', color: 'gray' },
 };
