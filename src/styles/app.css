@@ -1,0 +1,695 @@
+/*
+ * App surface system: an off-white canvas, white cards with a soft-gray hairline, and a deep-slate
+ * navigation sidebar in both schemes. Flat colour only: no gradients, glass or glows. Mantine
+ * components pick these up through the classNames set in app/theme.ts.
+ */
+:root,
+:root[data-mantine-color-scheme='light'] {
+  --app-shell-border-color: var(--app-border);
+  --app-canvas: #f7f9f7;
+  --app-surface: #ffffff;
+  --app-surface-muted: #f7f9f7;
+  --app-border: #dce4e0;
+  --app-border-strong: #c3cec9;
+  --app-hover: rgba(23, 32, 29, 0.03);
+  --app-hover-strong: rgba(23, 32, 29, 0.06);
+  --app-shadow: 0 1px 2px rgba(23, 32, 29, 0.04);
+  --app-shadow-hover: 0 6px 16px -8px rgba(23, 32, 29, 0.14);
+  --app-text-muted: #64736d;
+  --app-brand-soft: rgba(39, 109, 84, 0.08);
+  /* Navigation: the brand's forest green, with text tuned for AA contrast (4.5:1) on it. */
+  --app-nav-bg: #276d54;
+  --app-nav-border: #276d54;
+  --app-nav-text: #ffffff;
+  --app-nav-item: #dceae3;
+  --app-nav-label: #cfe2d8;
+  --app-nav-accent: #bfe8d0;
+}
+
+:root[data-mantine-color-scheme='dark'] {
+  --app-shell-border-color: var(--app-border);
+  --app-canvas: #0b1110;
+  --app-surface: #111817;
+  --app-surface-muted: #18211e;
+  --app-border: #26332f;
+  --app-border-strong: #33423d;
+  --app-hover: rgba(255, 255, 255, 0.03);
+  --app-hover-strong: rgba(255, 255, 255, 0.06);
+  --app-shadow: none;
+  --app-shadow-hover: 0 0 0 1px #33423d;
+  --app-text-muted: #9aa8a2;
+  --app-brand-soft: rgba(47, 125, 91, 0.18);
+  --app-nav-bg: #1f5a46;
+  --app-nav-border: #26332f;
+}
+
+html,
+body {
+  background-color: var(--app-canvas);
+}
+
+body {
+  font-feature-settings: 'cv11', 'ss01';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: rgba(47, 125, 91, 0.2);
+}
+
+/* Numbers that line up or update in place. */
+.app-num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Surfaces ---- */
+
+.app-surface,
+.app-paper {
+  background-color: var(--app-surface);
+}
+
+.app-surface[data-with-border],
+.app-paper[data-with-border] {
+  border-color: var(--app-border);
+  box-shadow: var(--app-shadow);
+}
+
+a.app-surface,
+.app-surface[data-interactive] {
+  transition:
+    box-shadow 160ms ease,
+    border-color 160ms ease;
+}
+
+a.app-surface:hover,
+.app-surface[data-interactive]:hover {
+  box-shadow: var(--app-shadow-hover);
+  border-color: var(--app-border-strong);
+}
+
+/* AI-generated content: a faint intelligence-blue wash and edge, never a blue interface. */
+.app-ai {
+  border-radius: var(--mantine-radius-md);
+  background-color: color-mix(in srgb, var(--mantine-color-blue-filled) 5%, var(--app-surface));
+  border: 1px solid color-mix(in srgb, var(--mantine-color-blue-filled) 24%, var(--app-border));
+}
+
+.app-ai-label {
+  color: var(--mantine-color-blue-text);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* ---- Buttons, badges, tabs ---- */
+
+.app-button {
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+
+/* Filled is Mantine's default variant, which it renders without a data-variant attribute. */
+.app-button:is(:not([data-variant]), [data-variant='filled']):not(:disabled, [data-disabled]) {
+  box-shadow: 0 1px 2px rgba(23, 32, 29, 0.12);
+}
+
+.app-button[data-variant='default'] {
+  border-color: var(--app-border-strong);
+  box-shadow: var(--app-shadow);
+}
+
+.app-badge {
+  flex-shrink: 0;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* Dot badges become quiet status pills: tinted background, no outline. */
+.app-badge[data-variant='dot'] {
+  border: 0;
+  background: color-mix(in srgb, var(--badge-dot-color) 12%, transparent);
+  color: var(--mantine-color-text);
+}
+
+.app-tab {
+  font-weight: 550;
+}
+
+.app-segmented {
+  background-color: var(--app-hover-strong);
+}
+
+.app-segmented-label {
+  font-weight: 550;
+}
+
+/* ---- Tables ---- */
+
+.app-table {
+  --table-border-color: var(--app-border);
+  --table-hover-color: var(--app-hover);
+  --table-striped-color: var(--app-surface-muted);
+}
+
+.app-table thead th {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--app-text-muted);
+  background-color: var(--app-surface-muted);
+  white-space: nowrap;
+}
+
+/* ---- Overlays ---- */
+
+.app-modal-content {
+  box-shadow: var(--mantine-shadow-xl);
+}
+
+.app-modal-title {
+  font-size: 17px;
+  font-weight: 650;
+}
+
+.app-menu {
+  border-color: var(--app-border);
+  padding: 6px;
+}
+
+.app-anchor {
+  font-weight: 550;
+}
+
+/* ---- Brand ---- */
+
+.app-brand-mark {
+  --mark-bg: var(--mantine-primary-color-filled);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: #ffffff;
+  background-color: var(--mark-bg);
+}
+
+.app-wordmark {
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.app-wordmark-accent {
+  color: #2f7d5b;
+}
+
+:root[data-mantine-color-scheme='dark'] .app-wordmark-accent {
+  color: #7db695;
+}
+
+/* ---- App shell: forest navigation in both schemes ---- */
+
+.app-shell-header {
+  background-color: var(--app-canvas);
+}
+
+.app-shell-navbar {
+  --app-shell-border-color: var(--app-nav-border);
+  --mantine-color-text: var(--app-nav-text);
+  --mantine-color-dimmed: var(--app-nav-label);
+  --mantine-color-brand-light: rgba(255, 255, 255, 0.14);
+  --mantine-color-brand-light-color: #e3f0e8;
+  --mantine-color-gray-light: rgba(255, 255, 255, 0.1);
+  --mantine-color-gray-light-color: #dbe7e1;
+  --app-nav-hover: rgba(255, 255, 255, 0.07);
+  --app-nav-line: rgba(255, 255, 255, 0.12);
+  --app-border: var(--app-nav-line);
+  --app-text-muted: var(--app-nav-label);
+  background-color: var(--app-nav-bg);
+  color: var(--app-nav-text);
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+/* On the forest sidebar the mark inverts: a white square with a forest droplet. */
+.app-shell-navbar .app-brand-mark {
+  --mark-bg: #ffffff;
+  color: var(--app-nav-bg);
+}
+
+.app-shell-navbar .app-wordmark-accent {
+  color: var(--app-nav-accent);
+}
+
+.app-nav-section-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--app-nav-label);
+  padding: 0 10px;
+  margin-bottom: 4px;
+}
+
+.app-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 8px;
+  color: var(--app-nav-item);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.app-nav-item:hover {
+  background-color: var(--app-nav-hover);
+  color: #ffffff;
+}
+
+.app-nav-item[data-active] {
+  background-color: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.app-nav-icon {
+  flex-shrink: 0;
+  color: currentColor;
+}
+
+.app-nav-item[data-active] .app-nav-icon {
+  color: var(--app-nav-accent);
+}
+
+.app-switcher {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px solid var(--app-nav-line);
+  background-color: rgba(255, 255, 255, 0.05);
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease;
+}
+
+.app-switcher:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  background-color: var(--app-nav-hover);
+}
+
+.app-farm-tile {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 8px;
+  font-weight: 700;
+  background-color: var(--mantine-color-brand-light);
+  color: var(--mantine-color-brand-light-color);
+}
+
+.app-user-button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px;
+  border-radius: 10px;
+  transition: background-color 120ms ease;
+}
+
+.app-user-button:hover {
+  background-color: var(--app-nav-hover);
+}
+
+/* ---- Scrollbars ---- */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--app-border-strong) transparent;
+}
+
+/* ---- Sign in / create account ---- */
+
+.app-auth {
+  display: grid;
+  min-height: 100dvh;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 62em) {
+  .app-auth {
+    grid-template-columns: minmax(440px, 1fr) minmax(0, 1.1fr);
+  }
+}
+
+.app-auth-form {
+  background-color: var(--app-surface);
+  min-height: 100dvh;
+}
+
+/* The product story side: the same forest as the navigation, with flat elevated cards. */
+.app-auth-panel {
+  background-color: var(--app-nav-bg);
+  color: var(--app-nav-text);
+  border-left: 1px solid var(--app-nav-bg);
+}
+
+:root[data-mantine-color-scheme='dark'] .app-auth-form {
+  background-color: var(--app-canvas);
+}
+
+:root[data-mantine-color-scheme='dark'] .app-auth-panel {
+  border-left-color: var(--app-border);
+}
+
+.app-auth-card {
+  border-radius: 12px;
+  background-color: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.app-auth-muted {
+  color: var(--app-nav-label);
+}
+
+.app-auth-pill {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background-color: rgba(255, 255, 255, 0.12);
+  color: #e3f0e8;
+  white-space: nowrap;
+}
+
+.app-auth-bar {
+  height: 6px;
+  border-radius: 999px;
+  background-color: rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+}
+
+.app-auth-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background-color: #159a9c;
+}
+
+/* ---- Tiles and rows inside a card (no nested borders) ---- */
+
+.app-tile {
+  display: block;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background-color: var(--app-surface-muted);
+  border: 1px solid var(--app-border);
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+
+.app-tile:hover {
+  border-color: var(--app-border-strong);
+  background-color: var(--app-surface);
+}
+
+.app-row {
+  display: block;
+  width: 100%;
+  padding: 8px;
+  border-radius: 10px;
+  transition: background-color 120ms ease;
+}
+
+.app-row:hover {
+  background-color: var(--app-hover);
+}
+
+/* Board lanes (maintenance): a recessed column the cards sit in. */
+.app-lane {
+  background-color: var(--app-surface-muted);
+  border: 1px solid var(--app-border);
+  border-radius: var(--mantine-radius-md);
+}
+
+/* ---- Metric strip: one card, cells divided by hairlines (the edges clip at the card) ---- */
+
+.app-metric-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  overflow: hidden;
+}
+
+/* Two figures per row on phones rather than a long single column. */
+@media (max-width: 36em) {
+  .app-metric-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app-metric {
+    padding: 14px 14px 12px;
+  }
+}
+
+.app-metric {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 18px 20px 16px;
+  color: inherit;
+  text-decoration: none;
+  box-shadow:
+    1px 0 0 var(--app-border),
+    0 1px 0 var(--app-border);
+  transition: background-color 120ms ease;
+}
+
+.app-metric[data-link]:hover {
+  background-color: var(--app-hover);
+}
+
+.app-metric-go {
+  position: absolute;
+  top: 18px;
+  right: 16px;
+  color: var(--app-text-muted);
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.app-metric[data-link]:hover .app-metric-go,
+.app-metric[data-link]:focus-visible .app-metric-go {
+  opacity: 1;
+}
+
+/* ---- Lists inside cards ---- */
+
+.app-list-row {
+  transition: background-color 120ms ease;
+}
+
+.app-list-row:hover {
+  background-color: var(--app-hover);
+}
+
+.app-list-row + .app-list-row {
+  border-top: 1px solid var(--app-border);
+}
+
+/* Row actions appear on hover or keyboard focus; touch screens always show them. */
+.app-row-action {
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.app-list-row:hover .app-row-action,
+.app-list-row:focus-within .app-row-action,
+tr:hover .app-row-action,
+tr:focus-within .app-row-action {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .app-row-action {
+    opacity: 1;
+  }
+}
+
+.app-ai-wash {
+  background-color: color-mix(in srgb, var(--mantine-color-blue-filled) 4%, var(--app-surface));
+}
+
+.app-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---- Tables that scroll sideways on narrow screens and keep a sticky header on wide ones ---- */
+
+.app-table-scroll {
+  overflow-x: auto;
+}
+
+@media (min-width: 62em) {
+  .app-table-scroll {
+    overflow: visible;
+  }
+}
+
+/* ---- Motion: content settles in; nothing moves when the user prefers reduced motion ---- */
+
+@keyframes app-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.app-page,
+.app-fade-in {
+  animation: app-enter 220ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-page,
+  .app-fade-in {
+    animation: none;
+  }
+
+  .app-metric,
+  .app-list-row,
+  .app-row-action {
+    transition: none;
+  }
+}
+
+/* ---- Filter bar ---- */
+
+.app-filter-chip[data-active] {
+  border-color: color-mix(in srgb, var(--mantine-primary-color-filled) 45%, var(--app-border));
+  background-color: var(--mantine-primary-color-light);
+  color: var(--mantine-primary-color-light-color);
+}
+
+/* ---- Sortable headers ---- */
+
+.app-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: inherit;
+  color: inherit;
+  white-space: nowrap;
+}
+
+.app-sort[data-align='right'] {
+  flex-direction: row-reverse;
+}
+
+.app-sort svg {
+  opacity: 0.35;
+  transition: opacity 120ms ease;
+}
+
+.app-sort:hover svg,
+.app-sort[data-sorted] svg {
+  opacity: 1;
+}
+
+.app-sort[data-sorted] {
+  color: var(--mantine-color-text);
+}
+
+/* Cards that hold a table clip their corners without becoming a scroll box, so headers can stick. */
+.app-table-card {
+  overflow: clip;
+}
+
+.app-search-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 34px;
+  padding: 0 8px 0 10px;
+  border-radius: 8px;
+  color: var(--app-nav-item);
+  background-color: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--app-nav-line);
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.app-search-button:hover {
+  background-color: var(--app-nav-hover);
+  color: #ffffff;
+}
+
+.app-search-button kbd {
+  background-color: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #dbe7e1;
+}
+
+/* ---- Ask IrrigaIQ launcher: fixed bottom right on every page, above content, below overlays ---- */
+
+.app-ask-launcher {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 150;
+  box-shadow:
+    0 8px 24px -6px rgba(23, 32, 29, 0.28),
+    0 2px 6px rgba(23, 32, 29, 0.12);
+}
+
+@media (max-width: 48em) {
+  .app-ask-launcher {
+    right: 16px;
+    bottom: 16px;
+  }
+}
+
+/* ---- Command palette ---- */
+
+.app-palette-group::before {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--app-text-muted);
+}
+
+.app-palette-action mark {
+  background-color: color-mix(in srgb, var(--mantine-color-blue-filled) 18%, transparent);
+  color: inherit;
+  border-radius: 2px;
+}
+
+/* Large headings sit tighter; small text keeps Inter's default tracking. */
+.mantine-Title-root[data-order='1'] {
+  letter-spacing: -0.022em;
+}
+
+/* Status pills in tables keep their full label; the column grows instead. */
+.app-table .mantine-Badge-root {
+  max-width: none;
+  flex-shrink: 0;
+}
+
+.app-table .mantine-Badge-label {
+  overflow: visible;
+}

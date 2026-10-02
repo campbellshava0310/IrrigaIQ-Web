@@ -1,0 +1,42 @@
+/*
+ * Chart tokens. Colour follows what is measured, the same on every chart, so users learn it once:
+ *   soil and crop = green · water = teal · rain and weather = blue · temperature = amber
+ *   equipment = slate · critical events = red
+ * Soil, water and rain are drawn together on the water-balance chart; the three were validated
+ * together (all pairs) for colour-blind separation, lightness band and chroma, in both modes. The
+ * chart green is the forest family pushed toward leaf so it separates from water teal.
+ * Status colours are reserved for states and always ship with an icon + label.
+ */
+:root {
+  --viz-soil: #2b7338;
+  --viz-water: #159a9c;
+  --viz-rain: #3b82f6;
+  --viz-temperature: #d99a24;
+  --viz-equipment: #4a5752;
+  --viz-critical: #c94b4b;
+  --viz-reference: #7f8e88;
+  --viz-grid: #e5ebe8;
+  --viz-forecast-wash: rgba(59, 130, 246, 0.06);
+  --viz-stress-wash: rgba(201, 75, 75, 0.06);
+  --status-good: #2e8b57;
+  --status-warning: #d99a24;
+  --status-serious: #cf6f35;
+  --status-critical: #c94b4b;
+}
+
+:root[data-mantine-color-scheme='dark'] {
+  --viz-soil: #48962c;
+  --viz-water: #22a7a9;
+  --viz-rain: #3b82f6;
+  --viz-temperature: #e2a73c;
+  --viz-equipment: #c3cec9;
+  --viz-critical: #d96a6a;
+  --viz-reference: #7f8e88;
+  --viz-grid: #26332f;
+  --viz-forecast-wash: rgba(59, 130, 246, 0.08);
+  --viz-stress-wash: rgba(201, 75, 75, 0.1);
+  --status-good: #389862;
+  --status-warning: #dea130;
+  --status-serious: #d5723d;
+  --status-critical: #ce5353;
+}
