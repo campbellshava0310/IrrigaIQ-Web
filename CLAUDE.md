@@ -34,6 +34,12 @@ Mantine **9** (`c=` not `color=` on Text, `schemaResolver` from `@mantine/form` 
 - Command palette and shortcuts live in `src/app/command`. A palette action that opens a dialog
   navigates to `?do=<command>`; the page reads it with `usePageCommand()` and derives the
   dialog's open state from it.
+- AI surfaces: the assistant is called IrrigaIQ and its entry points say "Ask IrrigaIQ"; the
+  launcher (`AskLauncher`) is fixed bottom right on every page, not in the sidebar. Open it from
+  anywhere with `assistant.open(question?)`
+  (`features/assistant/store`); answers stream as SSE over `http` (XHR progress events). ML views
+  (`features/ml`) carry `available`: when a model is offline, show the rule-based result alone and
+  say so. Model output wears `.app-ai`; anomaly wording stays hedged ("possible", never "leak").
 - Mutations that change a list the user is looking at update the cache optimistically
   (`onMutate` snapshot, `onError` rollback, `onSettled` invalidate the farm scope).
 

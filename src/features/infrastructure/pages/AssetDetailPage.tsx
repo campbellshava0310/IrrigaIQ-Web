@@ -58,6 +58,8 @@ import { useAsset, useChangeAssetStatus, useConditionChecks, useDeleteAsset } fr
 import { AssetFormModal } from '../components/AssetFormModal';
 import { AssetTrendChart } from '../components/AssetTrendChart';
 import { ConditionCheckModal } from '../components/ConditionCheckModal';
+import { PumpRiskCard } from '@/features/ml/components/PumpRiskCard';
+
 import { HealthRing } from '../components/HealthRing';
 import {
   ASSET_STATUS,
@@ -239,9 +241,10 @@ export function AssetDetailPage() {
                 </Stack>
               </Group>
               <Text size="xs" c="dimmed" mt="md">
-                Scored by transparent maintenance rules ({health.modelVersion}) from service
-                history, condition checks and age. Sensor-trained models will refine it as telemetry
-                arrives.
+                Scored by transparent maintenance rules from service history, condition checks and
+                age.
+                {asset.type === 'PUMP' &&
+                  ' The failure-risk model below adds a 14-day probability.'}
               </Text>
             </Card>
           </Grid.Col>
@@ -288,6 +291,8 @@ export function AssetDetailPage() {
           </Stack>
         </Card>
       )}
+
+      {asset.type === 'PUMP' && <PumpRiskCard farmId={farmId} assetId={asset.id} />}
 
       <Stack gap="lg" mb="lg">
         <AssetTrendChart asset={asset} checks={checks.data ?? []} />

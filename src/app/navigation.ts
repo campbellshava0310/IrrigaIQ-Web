@@ -6,6 +6,7 @@ import {
   IconHistory,
   IconLayoutDashboard,
   IconPlant2,
+  IconRouter,
   IconShieldCheck,
   IconSparkles,
   IconTool,
@@ -59,7 +60,10 @@ export const NAVIGATION: NavSection[] = [
   },
   {
     title: 'Setup',
-    items: [{ label: 'Farms & fields', to: '/farms', icon: IconPlant2 }],
+    items: [
+      { label: 'Farms & fields', to: '/farms', icon: IconPlant2 },
+      { label: 'Devices & sensors', to: '/devices', icon: IconRouter },
+    ],
   },
   {
     title: 'Administration',

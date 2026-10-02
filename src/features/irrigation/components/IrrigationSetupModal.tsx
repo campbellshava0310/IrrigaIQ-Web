@@ -1,4 +1,14 @@
-import { Button, Group, Modal, NumberInput, Select, SimpleGrid, Stack, Text } from '@mantine/core';
+import {
+  Button,
+  Checkbox,
+  Group,
+  Modal,
+  NumberInput,
+  Select,
+  SimpleGrid,
+  Stack,
+  Text,
+} from '@mantine/core';
 import { useForm } from '@mantine/form';
 
 import { ErrorState, LoadingState } from '@/components/QueryStates';
@@ -81,6 +91,7 @@ function SetupForm({
         ? Math.round(field.systemEfficiency * 100)
         : '') as number | '',
       pumpAssetId: field.pumpAssetId,
+      mulched: field.mulched ?? false,
     },
     validate: {
       method: (value) => (value ? null : 'Select how this field is irrigated'),
@@ -98,6 +109,7 @@ function SetupForm({
         applicationRateMmH: optionalNumber(values.applicationRateMmH),
         efficiency: efficiency != null ? efficiency / 100 : null,
         pumpAssetId: values.pumpAssetId,
+        mulched: values.mulched,
       },
       {
         onSuccess: () => {
@@ -165,6 +177,11 @@ function SetupForm({
           data={pumps.map((pump) => ({ value: pump.id, label: pump.name }))}
           clearable
           {...form.getInputProps('pumpAssetId')}
+        />
+        <Checkbox
+          label="Soil is mulched"
+          description="Organic or plastic mulch cuts evaporation; the irrigation-need model takes it into account."
+          {...form.getInputProps('mulched', { type: 'checkbox' })}
         />
         <Text size="xs" c="dimmed">
           Leave the rate or efficiency blank to use the typical value for the method. A measured

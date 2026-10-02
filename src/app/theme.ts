@@ -22,11 +22,11 @@ import {
 } from '@mantine/core';
 
 /*
- * IrrigaIQ palette: deep forest for the brand, water teal, intelligence blue, a controlled status
+ * IrrigaIQ palette: forest green for the brand, water teal, intelligence blue, a controlled status
  * scale, and green-tinted slate neutrals. Each scale puts its light-mode colour at shade 7 and a
  * lighter dark-mode colour at shade 6 (the primaryShade pair below); shade 4 is dark-mode text.
  *
- *   brand   #174A3A deep forest: logo, primary actions, navigation highlight, crop and soil
+ *   brand   #276D54 forest: logo, primary actions, navigation, crop and soil (shared with mobile)
  *   teal    #159A9C water: consumption, flow, volumes, savings
  *   blue    #3B82F6 intelligence: AI insights, information, weather and rain
  *   green   #2E8B57 healthy       yellow  #D99A24 warning (moderate, soon)
@@ -40,9 +40,9 @@ const brand: MantineColorsTuple = [
   '#549E77',
   '#3C8C66',
   '#2F7D5B',
+  '#276D54',
+  '#1F5A46',
   '#174A3A',
-  '#123D30',
-  '#0C2B22',
 ];
 
 const teal: MantineColorsTuple = [

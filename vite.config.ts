@@ -33,7 +33,12 @@ export default defineConfig(({ mode }) => {
               },
               {
                 name: 'vendor-mantine',
-                test: /node_modules[\\/](@mantine[\\/](?!charts[\\/])|@floating-ui[\\/]|dayjs[\\/])/,
+                test: /node_modules[\\/](@mantine[\\/](?!charts[\\/]|dates[\\/])|@floating-ui[\\/])/,
+              },
+              // Date pickers only appear in forms; after vendor-mantine so they do not pull core with them.
+              {
+                name: 'vendor-mantine-dates',
+                test: /node_modules[\\/](@mantine[\\/]dates|dayjs)[\\/]/,
               },
               // Charts (Recharts + d3) are only needed by the lazily loaded chart pages. Groups claim
               // modules and their dependencies in order, so this comes after vendor-mantine: otherwise

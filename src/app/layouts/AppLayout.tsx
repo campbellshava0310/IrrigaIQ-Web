@@ -26,6 +26,7 @@ import {
   IconSun,
   IconUserCircle,
 } from '@tabler/icons-react';
+import { lazy, Suspense, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
 
 import { CommandPalette } from '@/app/command/CommandPalette';
@@ -35,6 +36,8 @@ import { useKeyboardShortcuts } from '@/app/command/useKeyboardShortcuts';
 import { NAVIGATION, isActive, type NavItem } from '@/app/navigation';
 import { Brand } from '@/components/Brand';
 import { useAlerts } from '@/features/alerts/api';
+import { AskLauncher } from '@/features/assistant/components/AskLauncher';
+import { useAssistantShortcut, useAssistantState } from '@/features/assistant/store';
 import { useAuth } from '@/features/auth/useAuth';
 import { FarmSwitcher } from '@/features/farms/components/FarmSwitcher';
 import { useCurrentFarm } from '@/features/farms/currentFarm';
@@ -176,6 +179,25 @@ function UserButton({ onNavigate }: { onNavigate: () => void }) {
   );
 }
 
+const AssistantDrawer = lazy(async () => ({
+  default: (await import('@/features/assistant/components/AssistantDrawer')).AssistantDrawer,
+}));
+
+/** The assistant's code loads the first time it opens, then stays mounted to keep the conversation. */
+function Assistant() {
+  useAssistantShortcut();
+  const { opened } = useAssistantState();
+  const [loaded, setLoaded] = useState(false);
+  if (opened && !loaded) {
+    setLoaded(true);
+  }
+  return loaded ? (
+    <Suspense fallback={null}>
+      <AssistantDrawer />
+    </Suspense>
+  ) : null;
+}
+
 export function AppLayout() {
   const [opened, { toggle, close }] = useDisclosure(false);
   const [shortcutsOpened, shortcuts] = useDisclosure(false);
@@ -268,12 +290,15 @@ export function AppLayout() {
       </AppShell.Navbar>
 
       <AppShell.Main>
-        <Box maw={1240} mx="auto" pb="xl" key={pathname} className="app-page">
+        {/* Bottom padding keeps page content clear of the Ask IrrigaIQ launcher. */}
+        <Box maw={1240} mx="auto" pb={96} key={pathname} className="app-page">
           <Outlet />
         </Box>
       </AppShell.Main>
       <CommandPalette onShowShortcuts={shortcuts.open} />
       <ShortcutsModal opened={shortcutsOpened} onClose={shortcuts.close} />
+      <AskLauncher />
+      <Assistant />
     </AppShell>
   );
 }

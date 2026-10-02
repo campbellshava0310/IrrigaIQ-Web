@@ -9,7 +9,7 @@ import { notifyError, notifySuccess } from '@/lib/notify';
 import { useCreateDemoFarm } from '../api';
 
 /**
- * Seeds a complete, realistic farm for demos and onboarding: four irrigated fields with a season
+ * Seeds a complete, realistic sample farm for onboarding and training: four irrigated fields with a season
  * of history, a water network with a degrading pump and clogging filter, work orders and alerts.
  */
 export function DemoFarmCard() {
@@ -30,19 +30,19 @@ export function DemoFarmCard() {
           navigate('/');
         }
       },
-      onError: (error) => notifyError(error, "Couldn't create the demo farm"),
+      onError: (error) => notifyError(error, "Couldn't create the sample farm"),
     });
 
   return (
     <Card withBorder>
       <Group gap="xs" mb="xs">
         <IconSparkles size={20} />
-        <Text fw={600}>Demo farm</Text>
+        <Text fw={600}>Sample farm</Text>
       </Group>
       <Text size="sm" c="dimmed" mb="md">
         Creates a realistic Mazowe farm with a season of irrigation history, a water network with a
-        degrading pump and a clogging filter, open work orders and live alerts. Good for demos,
-        training and trying features safely.
+        degrading pump and a clogging filter, open work orders and live alerts. Good for training
+        and trying features safely.
       </Text>
       <Stack gap="sm">
         <TextInput
@@ -59,7 +59,7 @@ export function DemoFarmCard() {
             loading={create.isPending}
             onClick={submit}
           >
-            Create demo farm
+            Create sample farm
           </Button>
         </Group>
       </Stack>

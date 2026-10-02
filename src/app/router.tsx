@@ -41,6 +41,12 @@ export const router = createBrowserRouter([
       { index: true, element: <OverviewPage /> },
       { path: 'farms', element: <FarmsPage /> },
       { path: 'farms/:farmId', element: <FarmDetailPage /> },
+      {
+        path: 'devices',
+        lazy: async () => ({
+          Component: (await import('@/features/devices/pages/DevicesPage')).DevicesPage,
+        }),
+      },
       // Pages with charts are code-split so Recharts only loads when a chart is on screen.
       {
         path: 'farms/:farmId/fields/:fieldId',

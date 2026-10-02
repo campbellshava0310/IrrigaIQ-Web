@@ -112,6 +112,7 @@ export interface Field {
   applicationRateMmH: number | null;
   systemEfficiency: number | null;
   pumpAssetId: string | null;
+  mulched: boolean;
   createdAt: string;
   updatedAt: string;
 }

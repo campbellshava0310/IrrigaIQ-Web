@@ -1,7 +1,7 @@
 import { Box, Group, Text } from '@mantine/core';
 
 /**
- * The IrrigaIQ mark: a water droplet with a leaf cut into it, flat on a deep-forest square. The leaf
+ * The IrrigaIQ mark: a water droplet with a leaf cut into it, flat on a forest square. The leaf
  * takes the square's colour through --mark-bg, so the mark works on any surface.
  */
 export function BrandMark({ size = 28 }: { size?: number }) {

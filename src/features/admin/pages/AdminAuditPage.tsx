@@ -19,7 +19,7 @@ import { formatDateTime, formatRelative, humanize } from '@/lib/format';
 import { describeUserAgent } from '@/lib/userAgent';
 
 import { useAuditEvents } from '../api';
-import { AUDIT_ACTIONS, type AuditAction, type AuditEvent } from '../types';
+import { AUDIT_ACTION_LABEL, AUDIT_ACTIONS, type AuditAction, type AuditEvent } from '../types';
 
 type OutcomeFilter = 'ALL' | 'SUCCESS' | 'FAILURE';
 
@@ -87,7 +87,10 @@ export function AdminAuditPage() {
           label="Action"
           allLabel="All"
           value={action}
-          options={AUDIT_ACTIONS.map((value) => ({ value, label: humanize(value) }))}
+          options={AUDIT_ACTIONS.map((value) => ({
+            value,
+            label: AUDIT_ACTION_LABEL[value] ?? humanize(value),
+          }))}
           onChange={(value) => {
             setAction(value);
             setPage(1);
@@ -135,7 +138,7 @@ export function AdminAuditPage() {
                       </Table.Td>
                       <Table.Td>
                         <Text size="sm" fw={500}>
-                          {humanize(event.action)}
+                          {AUDIT_ACTION_LABEL[event.action] ?? humanize(event.action)}
                         </Text>
                       </Table.Td>
                       <Table.Td>

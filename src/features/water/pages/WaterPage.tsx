@@ -1,5 +1,6 @@
 import { CompositeChart } from '@/lib/charts';
 import {
+  Box,
   Anchor,
   Badge,
   Card,
@@ -26,6 +27,7 @@ import { Metric, MetricStrip, type MetricTone } from '@/components/MetricStrip';
 import { TrendLine } from '@/components/TrendLine';
 import { RequireFarm } from '@/features/farms/components/RequireFarm';
 import type { Farm } from '@/features/farms/types';
+import { WaterMetersCard } from '@/features/ml/components/WaterMetersCard';
 import { ASSET_TYPE } from '@/features/infrastructure/presentation';
 import {
   addDays,
@@ -85,6 +87,9 @@ function WaterAccounting({ farm }: { farm: Farm }) {
           <WaterReport summary={summary.data} farm={farm} />
         </div>
       )}
+      <Box mt="lg">
+        <WaterMetersCard farmId={farm.id} />
+      </Box>
     </>
   );
 }

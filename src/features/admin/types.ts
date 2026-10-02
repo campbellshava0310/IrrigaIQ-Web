@@ -82,6 +82,11 @@ export const AUDIT_ACTIONS = [
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
+/** Words for codes that would read wrongly when humanized (the codes are an API contract). */
+export const AUDIT_ACTION_LABEL: Partial<Record<AuditAction, string>> = {
+  DEMO_FARM_CREATED: 'Sample farm created',
+};
+
 export interface AuditEvent {
   id: string;
   occurredAt: string;

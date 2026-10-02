@@ -169,6 +169,7 @@ export interface SetupInput {
   applicationRateMmH: number | null;
   efficiency: number | null;
   pumpAssetId: string | null;
+  mulched: boolean | null;
 }
 
 export interface LogIrrigationInput {

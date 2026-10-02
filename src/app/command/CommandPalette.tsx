@@ -11,6 +11,8 @@ import {
   IconMoon,
   IconPlant2,
   IconPlus,
+  IconRouter,
+  IconSparkles,
   IconSearch,
   IconSun,
   IconTool,
@@ -18,6 +20,7 @@ import {
 import { useNavigate } from 'react-router';
 
 import { NAVIGATION } from '@/app/navigation';
+import { assistant } from '@/features/assistant/store';
 import { useAuth } from '@/features/auth/useAuth';
 import { useFields } from '@/features/farms/api';
 import { useCurrentFarm } from '@/features/farms/currentFarm';
@@ -25,7 +28,7 @@ import { useAssets } from '@/features/infrastructure/api';
 import { ASSET_STATUS, ASSET_TYPE } from '@/features/infrastructure/presentation';
 import { formatHectares, humanize } from '@/lib/format';
 
-import { GO_SHORTCUTS, paletteStore, type PageCommand } from './palette';
+import { GO_SHORTCUTS, MOD_KEY, paletteStore, type PageCommand } from './palette';
 
 const ICON = { size: 18, stroke: 1.7 } as const;
 
@@ -80,6 +83,15 @@ export function CommandPalette({ onShowShortcuts }: { onShowShortcuts: () => voi
       group: 'Actions',
       actions: [
         {
+          id: 'assistant',
+          label: 'Ask IrrigaIQ',
+          description: 'Questions about fields, water use and equipment',
+          keywords: ['ai', 'chat', 'assistant', 'why', 'help'],
+          leftSection: <IconSparkles {...ICON} />,
+          rightSection: <Keys keys={[MOD_KEY, 'J']} />,
+          onClick: () => assistant.open(),
+        },
+        {
           id: 'log-irrigation',
           label: 'Log an irrigation',
           description: 'Record a run that has happened',
@@ -110,6 +122,14 @@ export function CommandPalette({ onShowShortcuts }: { onShowShortcuts: () => voi
           keywords: ['infrastructure', 'pump', 'borehole'],
           leftSection: <IconPlus {...ICON} />,
           onClick: () => run('new-asset', '/infrastructure'),
+        },
+        {
+          id: 'register-device',
+          label: 'Register a device',
+          description: 'Soil probe, water meter or pump monitor',
+          keywords: ['sensor', 'esp32', 'iot', 'probe', 'meter'],
+          leftSection: <IconRouter {...ICON} />,
+          onClick: () => run('register-device', '/devices'),
         },
         {
           id: 'briefing',

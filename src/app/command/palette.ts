@@ -19,7 +19,9 @@ export const GO_SHORTCUTS = [
   { key: 'a', to: '/alerts', label: 'Alerts' },
   { key: 'b', to: '/intelligence', label: 'Farm intelligence (briefing)' },
   { key: 'f', to: '/farms', label: 'Farms & fields' },
+  { key: 'd', to: '/devices', label: 'Devices & sensors' },
 ] as const;
 
 /** Screen actions a command can open: a page reads `?do=` and opens the matching dialog. */
-export type PageCommand = 'log-irrigation' | 'plan-irrigation' | 'new-work-order' | 'new-asset';
+export type PageCommand =
+  'log-irrigation' | 'plan-irrigation' | 'new-work-order' | 'new-asset' | 'register-device';

@@ -33,6 +33,8 @@ import {
 import { Link } from 'react-router';
 
 import { IRRIGATION_METHOD_DEFAULTS } from '@/features/farms/types';
+import { ModelOpinion } from '@/features/ml/components/ModelOpinion';
+import type { FieldAssessment } from '@/features/ml/types';
 import {
   formatClock,
   formatDepth,
@@ -61,6 +63,8 @@ import { SoilWaterMeter } from './SoilWaterMeter';
 interface FieldRecommendationCardProps {
   farmId: string;
   field: FieldStatus;
+  /** The irrigation-need model's view of this field, when the ML service answered. */
+  model?: { assessment: FieldAssessment | undefined; available: boolean };
   planning: boolean;
   onPlan: (field: FieldStatus) => void;
   onLog: (field: FieldStatus) => void;
@@ -73,6 +77,7 @@ interface FieldRecommendationCardProps {
 export function FieldRecommendationCard({
   farmId,
   field,
+  model,
   planning,
   onPlan,
   onLog,
@@ -300,10 +305,14 @@ export function FieldRecommendationCard({
                 ))}
               </List>
               <Text size="xs" c="dimmed" mt="xs">
-                Method: FAO-56 soil water balance ({rec.modelVersion}). {rec.confidenceNote}
+                Method: FAO-56 soil water balance. {rec.confidenceNote}
               </Text>
             </Collapse>
           </Box>
+        )}
+
+        {planted && model && (
+          <ModelOpinion assessment={model.assessment} available={model.available} />
         )}
 
         <Group justify="space-between" gap="xs">

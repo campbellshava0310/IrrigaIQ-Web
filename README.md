@@ -109,20 +109,20 @@ and the classes the theme attaches). Build screens from these pieces rather than
   border strips, no uppercase micro labels.
 - `LoadingState layout="page"` for first loads (skeletons shaped like the page), `EmptyState`
   and `ErrorState` for the rest.
-- Flat colour only: no gradients, glass or glows. The sidebar is deep slate (`#111817`) in both
-  schemes; the canvas is off-white `#F7F9F7` (dark `#0B1110`) behind white cards with a
+- Flat colour only: no gradients, glass or glows. The sidebar is forest green (`#276D54`, dark
+  `#1F5A46`); the canvas is off-white `#F7F9F7` (dark `#0B1110`) behind white cards with a
   `#DCE4E0` hairline (dark `#111817` cards, `#26332F` edges).
 - Colour is semantic, the same on every screen and chart:
 
-  | Mantine colour | Hex (light) | Means                                                     |
-  | -------------- | ----------- | --------------------------------------------------------- |
-  | `brand`        | `#174A3A`   | Deep forest: logo, primary actions, navigation, crop/soil |
-  | `teal`         | `#159A9C`   | Water: consumption, volumes, savings                      |
-  | `blue`         | `#3B82F6`   | Intelligence: AI insights, information, weather and rain  |
-  | `green`        | `#2E8B57`   | Healthy                                                   |
-  | `yellow`       | `#D99A24`   | Warning: moderate risk, due soon                          |
-  | `orange`       | `#CF6F35`   | Serious: act now, high risk                               |
-  | `red`          | `#C94B4B`   | Critical                                                  |
+  | Mantine colour | Hex (light) | Means                                                    |
+  | -------------- | ----------- | -------------------------------------------------------- |
+  | `brand`        | `#276D54`   | Forest: logo, primary actions, navigation, crop/soil     |
+  | `teal`         | `#159A9C`   | Water: consumption, volumes, savings                     |
+  | `blue`         | `#3B82F6`   | Intelligence: AI insights, information, weather and rain |
+  | `green`        | `#2E8B57`   | Healthy                                                  |
+  | `yellow`       | `#D99A24`   | Warning: moderate risk, due soon                         |
+  | `orange`       | `#CF6F35`   | Serious: act now, high risk                              |
+  | `red`          | `#C94B4B`   | Critical                                                 |
 
   Each scale keeps its light colour at shade 7 and a lifted dark-mode colour at shade 6.
   `cssVariablesResolver` (in `theme.ts`) darkens text in the lighter accents so words stay
@@ -150,18 +150,20 @@ and the classes the theme attaches). Build screens from these pieces rather than
 
 ## Screens
 
-| Area                    | What it does                                                                                                                                                                                  |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Overview                | Today's plan (prioritised tasks with one-click actions), key numbers, soil water per field, 7-day forecast, infrastructure watch, briefing headline                                           |
-| Irrigation              | A recommendation card per field (what, how much, how long, when, why, confidence), schedule to confirm or skip, history; log irrigation, plan, soil check, irrigation system                  |
-| Field                   | Water-balance charts (soil water vs refill point; rain, irrigation and crop use), season and yield at risk, model assumptions, log, soil checks, crops                                        |
-| Water                   | Water saved vs a calendar schedule, applied vs crop need, energy and cost, per-field table, licensed allocations                                                                              |
-| Infrastructure          | Asset list and water-network tree with health, risk and next service; asset page with health factors, service forecast, trend (energy per m³, filter ΔP, water level), checks and work orders |
-| Maintenance             | Work-order board (to do, in progress, done) with start, complete (restarts the service clock), cancel, reopen                                                                                 |
-| Alerts                  | Active and resolved alerts by severity and area: plan irrigation, create a work order, acknowledge, resolve, re-check now                                                                     |
-| Farm intelligence       | The daily briefing, how each model decides, and what would make this farm's advice more accurate                                                                                              |
-| Farms & fields, Account | Farm setup (location, tariff, savings baseline), fields and crops; profile, password, devices                                                                                                 |
-| Admin                   | Overview, system health, users, audit log, demo farm                                                                                                                                          |
+| Area                    | What it does                                                                                                                                                                                                             |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Overview                | Today's plan (prioritised tasks with one-click actions), key numbers, soil water per field, 7-day forecast, infrastructure watch, briefing headline                                                                      |
+| Irrigation              | A recommendation card per field (what, how much, how long, when, why, confidence, the irrigation-need model's second opinion), schedule to confirm or skip, history; log irrigation, plan, soil check, irrigation system |
+| Field                   | Water-balance charts (soil water vs refill point; rain, irrigation and crop use), season and yield at risk, model assumptions, log, soil checks, crops                                                                   |
+| Water                   | Water saved vs a calendar schedule, applied vs crop need, energy and cost, per-field table, licensed allocations; water meters checked for possible anomalies (observed vs expected flow)                                |
+| Infrastructure          | Asset list and water-network tree with health, risk and next service; asset page with health factors, 14-day failure risk for pumps (ML), service forecast, trend, checks and work orders                                |
+| Maintenance             | Work-order board (to do, in progress, done) with start, complete (restarts the service clock), cancel, reopen                                                                                                            |
+| Alerts                  | Active and resolved alerts by severity and area: plan irrigation, create a work order, acknowledge, resolve, re-check now                                                                                                |
+| Farm intelligence       | The daily briefing, how each model decides, the ML model cards (evaluation and limitations), and what would make this farm's advice more accurate                                                                        |
+| Farms & fields, Account | Farm setup (location, tariff, savings baseline), fields and crops; profile, password, devices                                                                                                                            |
+| Devices & sensors       | ESP32 soil probes, water meters and pump monitors: register (key shown once), calibrate, disable, rotate keys, 48-hour readings                                                                                          |
+| Ask IrrigaIQ            | The AI assistant, from the launcher at the bottom right of every page or ⌘J: questions answered from the farm's live data, the ML models and cited guidance                                                              |
+| Admin                   | Overview, system health, users, audit log, sample farm                                                                                                                                                                   |
 
 ## Production image
 

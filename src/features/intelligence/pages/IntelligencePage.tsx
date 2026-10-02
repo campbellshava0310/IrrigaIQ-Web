@@ -2,6 +2,7 @@ import {
   Anchor,
   Badge,
   Box,
+  Button,
   Card,
   Grid,
   Group,
@@ -31,12 +32,14 @@ import { Link } from 'react-router';
 
 import { PageHeader } from '@/components/PageHeader';
 import { ErrorState, LoadingState } from '@/components/QueryStates';
+import { assistant } from '@/features/assistant/store';
 import { useBriefing, useWeather } from '@/features/dashboard/api';
 import type { BriefingItem, BriefingSection, Tone } from '@/features/dashboard/types';
 import { RequireFarm } from '@/features/farms/components/RequireFarm';
 import type { Farm } from '@/features/farms/types';
 import { useAssets } from '@/features/infrastructure/api';
 import { useIrrigationStatus } from '@/features/irrigation/api';
+import { ModelCatalogue } from '@/features/ml/components/ModelCatalogue';
 import { formatDayLabel, formatRelative } from '@/lib/format';
 
 const TONE: Record<Tone, { label: string; color: string; icon: Icon }> = {
@@ -85,9 +88,19 @@ function Intelligence({ farm }: { farm: Farm }) {
             <Title order={2} fz={{ base: 21, sm: 26 }} lts={-0.5} lh={1.3} maw={820}>
               {briefing.data.headline}
             </Title>
-            <Text size="sm" c="dimmed" mt={8}>
-              Based on soil water, the forecast, crop stage and equipment health on this farm.
-            </Text>
+            <Group justify="space-between" mt={8} gap="xs">
+              <Text size="sm" c="dimmed">
+                Based on soil water, the forecast, crop stage and equipment health on this farm.
+              </Text>
+              <Button
+                size="compact-sm"
+                variant="default"
+                leftSection={<IconSparkles size={14} />}
+                onClick={() => assistant.open('What should I focus on today, and why?')}
+              >
+                Ask a follow-up
+              </Button>
+            </Group>
           </Box>
 
           <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md">
@@ -101,6 +114,19 @@ function Intelligence({ farm }: { farm: Farm }) {
           </Text>
 
           <HowItWorks farm={farm} />
+
+          <Stack gap="md" mt="xl">
+            <div>
+              <Title order={2} fz="xl" lts={-0.3}>
+                Machine-learning models
+              </Title>
+              <Text c="dimmed" size="sm" mt={4}>
+                The models behind the second opinions, anomaly checks and failure risks: what each
+                does, how it was tested, and its limits.
+              </Text>
+            </div>
+            <ModelCatalogue />
+          </Stack>
         </Stack>
       )}
     </>
@@ -234,7 +260,7 @@ function HowItWorks({ farm }: { farm: Farm }) {
           How IrrigaIQ decides
         </Title>
         <Text c="dimmed" size="sm" mt={4}>
-          What each recommendation is based on today, and what sensors and trained models will add.
+          What each recommendation is based on, and what sensors and trained models add to it.
         </Text>
       </div>
       <Grid gap="md">
@@ -250,7 +276,7 @@ function HowItWorks({ farm }: { farm: Farm }) {
                 'Soil available water by texture; your irrigation log and soil checks',
                 'Schedules runs inside each pump’s solar or load-shedding-free window',
               ]}
-              next="Soil-moisture probes replace modelled depletion with measurements, and a model trained on your fields learns their real crop water use and drainage."
+              next="Soil probes reset the balance with measurements as they report. An irrigation-need model gives a second opinion with the readings behind it, and you can ask IrrigaIQ to explain any field's situation in plain words."
             />
             <ModelCard
               icon={IconEngine}
@@ -262,7 +288,7 @@ function HowItWorks({ farm }: { farm: Farm }) {
                 'Vibration, leaks, filter differential pressure and water level from inspections',
                 'Age against design life and repairs still open',
               ]}
-              next="Flow, pressure and motor-current sensors feed anomaly detection and a remaining-useful-life model that predicts failures weeks earlier."
+              next="Pump monitors feed a failure-risk model that estimates the chance of failure in the next 14 days, and water meters are checked hourly for leaks, valves left open and blockages."
             />
           </SimpleGrid>
         </Grid.Col>

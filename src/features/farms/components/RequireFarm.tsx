@@ -15,7 +15,7 @@ import { FarmFormModal } from './FarmFormModal';
 
 /**
  * Gate for farm-scoped screens: resolves the current farm, or guides a new user to create one
- * (admins can also load the demo farm to explore every feature with realistic data).
+ * (admins can also load a sample farm to explore every feature with realistic data).
  */
 export function RequireFarm({ children }: { children: (farm: Farm) => ReactNode }) {
   const { farm, isPending, error, refetch, select } = useCurrentFarm();
@@ -53,13 +53,16 @@ export function RequireFarm({ children }: { children: (farm: Farm) => ReactNode 
                   demo.mutate(null, {
                     onSuccess: (result) => {
                       select(result.farmId);
-                      notifySuccess(`${result.farmName} is ready to explore`, 'Demo farm created');
+                      notifySuccess(
+                        `${result.farmName} is ready to explore`,
+                        'Sample farm created',
+                      );
                     },
-                    onError: (cause) => notifyError(cause, "Couldn't create the demo farm"),
+                    onError: (cause) => notifyError(cause, "Couldn't create the sample farm"),
                   })
                 }
               >
-                Load the demo farm
+                Load a sample farm
               </Button>
             )}
           </Group>

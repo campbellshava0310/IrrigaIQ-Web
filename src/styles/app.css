@@ -16,8 +16,14 @@
   --app-shadow: 0 1px 2px rgba(23, 32, 29, 0.04);
   --app-shadow-hover: 0 6px 16px -8px rgba(23, 32, 29, 0.14);
   --app-text-muted: #64736d;
-  --app-brand-soft: rgba(23, 74, 58, 0.07);
-  --app-nav-border: #111817;
+  --app-brand-soft: rgba(39, 109, 84, 0.08);
+  /* Navigation: the brand's forest green, with text tuned for AA contrast (4.5:1) on it. */
+  --app-nav-bg: #276d54;
+  --app-nav-border: #276d54;
+  --app-nav-text: #ffffff;
+  --app-nav-item: #dceae3;
+  --app-nav-label: #cfe2d8;
+  --app-nav-accent: #bfe8d0;
 }
 
 :root[data-mantine-color-scheme='dark'] {
@@ -33,6 +39,7 @@
   --app-shadow-hover: 0 0 0 1px #33423d;
   --app-text-muted: #9aa8a2;
   --app-brand-soft: rgba(47, 125, 91, 0.18);
+  --app-nav-bg: #1f5a46;
   --app-nav-border: #26332f;
 }
 
@@ -199,7 +206,7 @@ a.app-surface:hover,
   color: #7db695;
 }
 
-/* ---- App shell: deep-slate navigation in both schemes ---- */
+/* ---- App shell: forest navigation in both schemes ---- */
 
 .app-shell-header {
   background-color: var(--app-canvas);
@@ -207,33 +214,35 @@ a.app-surface:hover,
 
 .app-shell-navbar {
   --app-shell-border-color: var(--app-nav-border);
-  --mantine-color-text: #f1f5f3;
-  --mantine-color-dimmed: #94a39d;
-  --mantine-color-brand-light: rgba(47, 125, 91, 0.3);
-  --mantine-color-brand-light-color: #cde7d8;
-  --mantine-color-gray-light: rgba(255, 255, 255, 0.08);
-  --mantine-color-gray-light-color: #c9d3cf;
-  --app-nav-hover: rgba(255, 255, 255, 0.05);
-  --app-nav-line: rgba(255, 255, 255, 0.08);
+  --mantine-color-text: var(--app-nav-text);
+  --mantine-color-dimmed: var(--app-nav-label);
+  --mantine-color-brand-light: rgba(255, 255, 255, 0.14);
+  --mantine-color-brand-light-color: #e3f0e8;
+  --mantine-color-gray-light: rgba(255, 255, 255, 0.1);
+  --mantine-color-gray-light-color: #dbe7e1;
+  --app-nav-hover: rgba(255, 255, 255, 0.07);
+  --app-nav-line: rgba(255, 255, 255, 0.12);
   --app-border: var(--app-nav-line);
-  --app-text-muted: #94a39d;
-  background-color: #111817;
-  color: #f1f5f3;
-  scrollbar-color: #26332f transparent;
+  --app-text-muted: var(--app-nav-label);
+  background-color: var(--app-nav-bg);
+  color: var(--app-nav-text);
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 }
 
+/* On the forest sidebar the mark inverts: a white square with a forest droplet. */
 .app-shell-navbar .app-brand-mark {
-  --mark-bg: #2f7d5b;
+  --mark-bg: #ffffff;
+  color: var(--app-nav-bg);
 }
 
 .app-shell-navbar .app-wordmark-accent {
-  color: #7db695;
+  color: var(--app-nav-accent);
 }
 
 .app-nav-section-label {
   font-size: 12px;
   font-weight: 600;
-  color: #7d8b85;
+  color: var(--app-nav-label);
   padding: 0 10px;
   margin-bottom: 4px;
 }
@@ -245,7 +254,7 @@ a.app-surface:hover,
   height: 34px;
   padding: 0 10px;
   border-radius: 8px;
-  color: #94a39d;
+  color: var(--app-nav-item);
   font-size: 14px;
   font-weight: 500;
   text-decoration: none;
@@ -260,7 +269,7 @@ a.app-surface:hover,
 }
 
 .app-nav-item[data-active] {
-  background-color: rgba(47, 125, 91, 0.24);
+  background-color: rgba(255, 255, 255, 0.12);
   color: #ffffff;
   font-weight: 600;
 }
@@ -271,7 +280,7 @@ a.app-surface:hover,
 }
 
 .app-nav-item[data-active] .app-nav-icon {
-  color: #7db695;
+  color: var(--app-nav-accent);
 }
 
 .app-switcher {
@@ -282,14 +291,14 @@ a.app-surface:hover,
   padding: 8px;
   border-radius: 10px;
   border: 1px solid var(--app-nav-line);
-  background-color: rgba(255, 255, 255, 0.03);
+  background-color: rgba(255, 255, 255, 0.05);
   transition:
     border-color 120ms ease,
     background-color 120ms ease;
 }
 
 .app-switcher:hover {
-  border-color: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.2);
   background-color: var(--app-nav-hover);
 }
 
@@ -343,11 +352,11 @@ a.app-surface:hover,
   min-height: 100dvh;
 }
 
-/* The product story side: the same deep slate as the navigation, with flat elevated cards. */
+/* The product story side: the same forest as the navigation, with flat elevated cards. */
 .app-auth-panel {
-  background-color: #111817;
-  color: #f1f5f3;
-  border-left: 1px solid #111817;
+  background-color: var(--app-nav-bg);
+  color: var(--app-nav-text);
+  border-left: 1px solid var(--app-nav-bg);
 }
 
 :root[data-mantine-color-scheme='dark'] .app-auth-form {
@@ -360,26 +369,26 @@ a.app-surface:hover,
 
 .app-auth-card {
   border-radius: 12px;
-  background-color: #18211e;
-  border: 1px solid #26332f;
+  background-color: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .app-auth-muted {
-  color: #94a39d;
+  color: var(--app-nav-label);
 }
 
 .app-auth-pill {
   padding: 3px 10px;
   border-radius: 999px;
-  background-color: rgba(47, 125, 91, 0.24);
-  color: #cde7d8;
+  background-color: rgba(255, 255, 255, 0.12);
+  color: #e3f0e8;
   white-space: nowrap;
 }
 
 .app-auth-bar {
   height: 6px;
   border-radius: 999px;
-  background-color: #26332f;
+  background-color: rgba(255, 255, 255, 0.14);
   overflow: hidden;
 }
 
@@ -616,8 +625,8 @@ tr:focus-within .app-row-action {
   height: 34px;
   padding: 0 8px 0 10px;
   border-radius: 8px;
-  color: #94a39d;
-  background-color: rgba(255, 255, 255, 0.04);
+  color: var(--app-nav-item);
+  background-color: rgba(255, 255, 255, 0.06);
   border: 1px solid var(--app-nav-line);
   transition:
     background-color 120ms ease,
@@ -630,9 +639,28 @@ tr:focus-within .app-row-action {
 }
 
 .app-search-button kbd {
-  background-color: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.12);
-  color: #c9d3cf;
+  background-color: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #dbe7e1;
+}
+
+/* ---- Ask IrrigaIQ launcher: fixed bottom right on every page, above content, below overlays ---- */
+
+.app-ask-launcher {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 150;
+  box-shadow:
+    0 8px 24px -6px rgba(23, 32, 29, 0.28),
+    0 2px 6px rgba(23, 32, 29, 0.12);
+}
+
+@media (max-width: 48em) {
+  .app-ask-launcher {
+    right: 16px;
+    bottom: 16px;
+  }
 }
 
 /* ---- Command palette ---- */

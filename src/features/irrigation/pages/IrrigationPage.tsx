@@ -18,6 +18,8 @@ import { RequireFarm } from '@/features/farms/components/RequireFarm';
 import type { Farm } from '@/features/farms/types';
 import { addDays, formatMoney, formatNumber, formatVolume, toIsoDate } from '@/lib/format';
 
+import { useIrrigationModel } from '@/features/ml/api';
+
 import { useIrrigationEvents, useIrrigationStatus } from '../api';
 import { CompleteIrrigationModal } from '../components/CompleteIrrigationModal';
 import { EventsTable } from '../components/EventsTable';
@@ -46,6 +48,7 @@ export function IrrigationPage() {
 
 function IrrigationWorkspace({ farm }: { farm: Farm }) {
   const status = useIrrigationStatus(farm.id);
+  const model = useIrrigationModel(farm.id);
   const actions = useIrrigationActions(farm.id);
   const [tab, setTab] = useState<string | null>('fields');
   const [filter, setFilter] = useState<Filter>('ALL');
@@ -230,6 +233,12 @@ function IrrigationWorkspace({ farm }: { farm: Farm }) {
                       key={field.fieldId}
                       farmId={farm.id}
                       field={field}
+                      model={
+                        model.data && {
+                          available: model.data.available,
+                          assessment: model.data.fields.find((f) => f.fieldId === field.fieldId),
+                        }
+                      }
                       planning={actions.planningFieldId === field.fieldId}
                       onPlan={(target) => actions.planRecommended(target.fieldId)}
                       onLog={(target) =>

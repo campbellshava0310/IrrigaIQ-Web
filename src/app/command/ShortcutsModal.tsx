@@ -4,6 +4,7 @@ import { GO_SHORTCUTS, MOD_KEY } from './palette';
 
 const GENERAL = [
   { keys: [MOD_KEY, 'K'], label: 'Search and run a command' },
+  { keys: [MOD_KEY, 'J'], label: 'Ask IrrigaIQ' },
   { keys: ['/'], label: 'Search and run a command' },
   { keys: ['?'], label: 'Show keyboard shortcuts' },
   { keys: ['Esc'], label: 'Close a dialog or menu' },
